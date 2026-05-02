@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS content (
 INSERT INTO users (username, password, email, full_name, role)
 VALUES (
   'admin',
-  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+  '$2a$10$BC/dB7JrM8pkH3GeLGN.o.umrb0z6g50sEgxbNCCYr0Z8v0m9hq4W',
   'admin@umbrella.tn',
   'Administrateur',
   'admin'
