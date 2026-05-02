@@ -2,10 +2,16 @@ import { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Menu, X, Lock } from 'lucide-react';
 
-export default function Navbar() {
+interface NavbarProps {
+  darkOnInit?: boolean;
+}
+
+export default function Navbar({ darkOnInit = false }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+
+  const isDark = scrolled || darkOnInit;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,7 +28,7 @@ export default function Navbar() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
+        isDark
           ? 'bg-white/95 backdrop-blur-md border-b border-black/5 nav-scrolled'
           : 'bg-transparent nav-top'
       }`}
@@ -32,10 +38,10 @@ export default function Navbar() {
         <Link
           to="/"
           className={`font-serif text-xl tracking-tight transition-all duration-300 ${
-            scrolled ? 'text-black' : 'text-white'
+            isDark ? 'text-black' : 'text-white'
           }`}
         >
-          UMBRELLA
+          UMBRELLA TUNISIE
         </Link>
 
         {/* Desktop Nav */}
@@ -50,7 +56,7 @@ export default function Navbar() {
               to={link.to}
               end={link.end}
               className={`text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
-                scrolled
+                isDark
                   ? 'text-black/50 hover:text-black'
                   : 'text-white/80 hover:text-white'
               }`}
@@ -62,7 +68,7 @@ export default function Navbar() {
           <NavLink
             to="/admin/connexion"
             className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
-              scrolled
+              isDark
                 ? 'text-black/40 hover:text-black'
                 : 'text-white/60 hover:text-white'
             }`}
@@ -76,7 +82,7 @@ export default function Navbar() {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`md:hidden transition-all duration-300 ${
-            scrolled ? 'text-black' : 'text-white'
+            isDark ? 'text-black' : 'text-white'
           }`}
           aria-label="Menu"
         >

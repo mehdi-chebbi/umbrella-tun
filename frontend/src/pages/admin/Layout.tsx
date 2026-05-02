@@ -39,7 +39,7 @@ export default function AdminLayout() {
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-6 border-b border-umbrella-border">
           <span className="text-base font-semibold tracking-[0.3em] text-umbrella-warm">
-            UMBRELLA
+            UMBRELLA TUNISIE
           </span>
           <button
             onClick={() => setSidebarOpen(false)}

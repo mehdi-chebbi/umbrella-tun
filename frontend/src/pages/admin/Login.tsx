@@ -53,7 +53,7 @@ export default function AdminLogin() {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-xl font-semibold tracking-[0.3em] text-umbrella-warm mb-2">
-              UMBRELLA
+              UMBRELLA TUNISIE
             </h1>
             <p className="text-sm text-umbrella-text-secondary">
               Connexion Administration

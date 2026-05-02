@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="grid md:grid-cols-4 gap-10 mb-14">
           {/* Brand */}
           <div className="md:col-span-2">
-            <p className="font-serif text-2xl mb-4">UMBRELLA</p>
+            <p className="font-serif text-2xl mb-4">UMBRELLA TUNISIE</p>
             <p className="text-sm font-light leading-relaxed text-white/40 max-w-sm">
               Projet de renforcement des capacités pour la neutralité en matière
               de dégradation des terres en Tunisie. Une initiative FEM/PNUE/OSS.
@@ -60,7 +60,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[11px] text-white/30">
-            © 2026 Projet Umbrella — OSS. Tous droits réservés.
+            © 2026 Projet Umbrella Tunisie — OSS. Tous droits réservés.
           </p>
           <div className="flex gap-6">
             <span className="text-[11px] text-white/30 hover:text-white/60 transition-colors cursor-pointer">

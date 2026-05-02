@@ -5,10 +5,10 @@ import Hero from '@/components/Hero';
 import SectionTitle from '@/components/SectionTitle';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import {
-  DollarSign, Globe, Eye, Building2,
   Leaf, MapPin, TreePine, Thermometer,
   BarChart3, Map, Mountain, Wind,
 } from 'lucide-react';
+import minEnvLogo from '@/assets/logo-min-environnement.png';
 
 /* ─── Types ─── */
 type Category = 'all' | 'principal' | 'national';
@@ -19,7 +19,7 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   return (
     <div
       ref={ref}
-      className={`reveal ${isVisible ? 'visible' : ''} ${delay ? `reveal-delay-${delay}` : ''} ${className}`}
+      className={`reveal ${isVisible ? 'visible' : ''} ${delay ? `reveal-delay-${delay}` : ''} ${className} h-full`}
     >
       {children}
     </div>
@@ -35,40 +35,40 @@ const categories: { key: Category; label: string }[] = [
 
 const mainPartners = [
   {
-    icon: DollarSign,
     name: 'FEM',
     fullName: "Fonds pour l'Environnement Mondial",
     role: 'Financement',
     description:
       "Le FEM est le mécanisme financier de la Convention. Il finance les projets de lutte contre la dégradation des terres dans les pays en développement.",
     category: 'principal' as Category,
+    logo: 'https://www.thegef.org/themes/custom/geftheme/logo.svg',
   },
   {
-    icon: Globe,
     name: 'PNUE',
     fullName: "Programme des Nations Unies pour l'Environnement",
     role: 'Mise en œuvre',
     description:
       "Le PNUE est l'agence d'exécution du projet, responsable de la coordination globale et du rapportage auprès des instances internationales.",
     category: 'principal' as Category,
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d0/PNUMA_logo.png',
   },
   {
-    icon: Eye,
     name: 'OSS',
     fullName: 'Observatoire du Sahara et du Sahel',
     role: 'Appui technique',
     description:
       "L'OSS assure l'appui technique du projet, apportant son expertise régionale en matière de suivi de la désertification.",
     category: 'principal' as Category,
+    logo: 'https://www.oss-online.org/sites/default/files/logo-h.png',
   },
   {
-    icon: Building2,
     name: 'Min. Environnement',
     fullName: "Ministère de l'Environnement de la Tunisie",
     role: 'Partenaire national',
     description:
       "Le Ministère est le point focal national du projet en Tunisie, assurant la coordination inter-institutionnelle.",
     category: 'principal' as Category,
+    logo: minEnvLogo,
   },
 ];
 
@@ -144,10 +144,11 @@ export default function Partners() {
 
       {/* ── Hero ── */}
       <Hero
+        variant="dark"
         tagline="Partenaires"
         title="Une Collaboration"
         titleLine2="Internationale"
-        image="partners"
+        subtitle="Le projet fédère des institutions internationales, des agences de l'ONU et des partenaires nationaux autour d'un objectif commun : la neutralité en matière de dégradation des terres."
         ctas={[
           { label: 'À Propos du Projet', to: '/a-propos', variant: 'outline' },
         ]}
@@ -191,30 +192,28 @@ export default function Partners() {
         <section className="py-20 md:py-32">
           <div className="max-w-7xl mx-auto px-6 md:px-12">
             <div className="grid md:grid-cols-4 gap-px bg-black/10">
-              {mainPartners.map((partner, i) => {
-                const Icon = partner.icon;
-                return (
-                  <Reveal key={partner.name} delay={Math.min(i + 1, 4)}>
-                    <div className="bg-white p-8 group hover:bg-black hover:text-white transition-colors duration-500 cursor-default">
-                      <Icon
-                        size={28}
-                        className="text-black/40 group-hover:text-white/60 transition-colors mb-6"
-                        strokeWidth={1.5}
+              {mainPartners.map((partner, i) => (
+                <Reveal key={partner.name} delay={Math.min(i + 1, 4)}>
+                  <div className="bg-white p-8 group hover:bg-black hover:text-white transition-colors duration-500 cursor-default h-full">
+                    <div className="flex justify-center items-end h-44 mb-6">
+                      <img
+                        src={partner.logo}
+                        alt={partner.name}
+                        className="w-auto max-w-full max-h-full object-contain opacity-70 group-hover:opacity-100 transition-opacity"
                       />
-                      <h3 className="font-serif text-xl tracking-tight mb-1">{partner.name}</h3>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-black/30 group-hover:text-white/40 transition-colors mb-3">
-                        {partner.role}
-                      </p>
-                      <p className="text-[12px] text-black/40 group-hover:text-white/40 transition-colors mb-3">
-                        {partner.fullName}
-                      </p>
-                      <p className="text-sm font-light leading-relaxed text-black/50 group-hover:text-white/50 transition-colors">
-                        {partner.description}
-                      </p>
                     </div>
-                  </Reveal>
-                );
-              })}
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-black/30 group-hover:text-white/40 transition-colors mb-3">
+                      {partner.role}
+                    </p>
+                    <p className="text-[12px] text-black/40 group-hover:text-white/40 transition-colors mb-3">
+                      {partner.fullName}
+                    </p>
+                    <p className="text-sm font-light leading-relaxed text-black/50 group-hover:text-white/50 transition-colors">
+                      {partner.description}
+                    </p>
+                  </div>
+                </Reveal>
+              ))}
             </div>
           </div>
         </section>
@@ -235,7 +234,7 @@ export default function Partners() {
                 const Icon = inst.icon;
                 return (
                   <Reveal key={inst.name} delay={Math.min(i + 1, 4)}>
-                    <div className="bg-white p-8 group hover:bg-black hover:text-white transition-colors duration-500 cursor-default">
+                    <div className="bg-white p-8 group hover:bg-black hover:text-white transition-colors duration-500 cursor-default h-full">
                       <Icon
                         size={28}
                         className="text-black/40 group-hover:text-white/60 transition-colors mb-6"

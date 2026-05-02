@@ -11,7 +11,7 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   return (
     <div
       ref={ref}
-      className={`reveal ${isVisible ? 'visible' : ''} ${delay ? `reveal-delay-${delay}` : ''} ${className}`}
+      className={`reveal ${isVisible ? 'visible' : ''} ${delay ? `reveal-delay-${delay}` : ''} ${className} h-full`}
     >
       {children}
     </div>
@@ -102,21 +102,22 @@ const phase4Features = [
 export default function About() {
   return (
     <div className="bg-white text-black font-sans antialiased">
-      <Navbar />
+      <Navbar darkOnInit />
 
       {/* ── Hero ── */}
       <Hero
+        variant="centered"
         tagline="À Propos"
         title="Le Projet"
-        titleLine2="Umbrella"
-        image="about"
+        titleLine2="Umbrella Tunisie"
+        subtitle="Renforcement des capacités institutionnelles et techniques pour atteindre la Neutralité en matière de Dégradation des Terres — un objectif central de la CNULCD."
         ctas={[
           { label: 'Nos Partenaires', to: '/partenaires' },
         ]}
       />
 
       {/* ── Context — Featured Artwork Detail style ── */}
-      <section className="py-20 md:py-32 bg-stone-50">
+      <section className="py-20 md:py-32">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <Reveal>
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-black/40 mb-3">
@@ -209,7 +210,7 @@ export default function About() {
             <Reveal delay={1}>
               <div className="space-y-5 text-sm font-light leading-relaxed text-white/60">
                 <p>
-                  La Phase IV actuelle du Projet Umbrella (2021–2026) s'inscrit dans la
+                  La Phase IV actuelle du Projet Umbrella Tunisie (2021–2026) s'inscrit dans la
                   continuité des phases précédentes tout en apportant des innovations
                   majeures pour répondre aux nouveaux défis liés à la dégradation des
                   terres.
@@ -255,7 +256,7 @@ export default function About() {
               const Icon = pillar.icon;
               return (
                 <Reveal key={pillar.title} delay={i + 1}>
-                  <div className="bg-white p-8 group hover:bg-black hover:text-white transition-colors duration-500 cursor-default">
+                  <div className="bg-white p-8 group hover:bg-black hover:text-white transition-colors duration-500 cursor-default h-full">
                     <Icon
                       size={28}
                       className="text-black/40 group-hover:text-white/60 transition-colors mb-6"

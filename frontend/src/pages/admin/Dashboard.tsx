@@ -60,7 +60,7 @@ export default function AdminDashboard() {
           Bienvenue, {user?.full_name || 'Administrateur'}
         </h1>
         <p className="text-sm text-umbrella-text-secondary mt-1">
-          Tableau de bord du Projet Umbrella
+          Tableau de bord du Projet Umbrella Tunisie
         </p>
       </div>
 

@@ -13,7 +13,7 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   return (
     <div
       ref={ref}
-      className={`reveal ${isVisible ? 'visible' : ''} ${delay ? `reveal-delay-${delay}` : ''} ${className}`}
+      className={`reveal ${isVisible ? 'visible' : ''} ${delay ? `reveal-delay-${delay}` : ''} ${className} h-full`}
     >
       {children}
     </div>
@@ -60,13 +60,15 @@ export default function Home() {
   return (
     <div className="bg-white text-black font-sans antialiased">
       {/* ── Navbar ── */}
-      <Navbar />
+      <Navbar darkOnInit />
 
       {/* ── Hero ── */}
       <Hero
+        variant="split"
         tagline="FEM · PNUE · OSS"
         title="Projet"
-        titleLine2="Umbrella"
+        titleLine2="Umbrella Tunisie"
+        subtitle="Suivi de la dégradation des terres dans les zones arides et semi-arides de la Tunisie — lutte contre la désertification et gestion durable des ressources naturelles."
         image="home"
         ctas={[
           { label: 'Découvrir le Projet', to: '/a-propos' },
@@ -108,7 +110,7 @@ export default function Home() {
               const Icon = obj.icon;
               return (
                 <Reveal key={obj.title} delay={i + 1}>
-                  <div className="bg-white p-8 group hover:bg-black hover:text-white transition-colors duration-500 cursor-default">
+                  <div className="bg-white p-8 group hover:bg-black hover:text-white transition-colors duration-500 cursor-default h-full">
                     <Icon
                       size={28}
                       className="text-black/40 group-hover:text-white/60 transition-colors mb-6"
@@ -141,7 +143,7 @@ export default function Home() {
                 </h2>
                 <div className="space-y-5 text-sm font-light leading-relaxed text-white/60">
                   <p>
-                    Le Projet Umbrella vise à renforcer les capacités institutionnelles et
+                    Le Projet Umbrella Tunisie vise à renforcer les capacités institutionnelles et
                     techniques de la Tunisie pour atteindre la Neutralité en matière de
                     Dégradation des Terres (NDT), un objectif central de la CNULCD.
                   </p>
