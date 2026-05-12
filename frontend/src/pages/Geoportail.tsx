@@ -13,10 +13,16 @@ interface LayerDef {
   layerName: string;
 }
 
+interface LegendItem {
+  label: string;
+  color: string;
+}
+
 interface LayerCategory {
   id: string;
   label: string;
   layers: LayerDef[];
+  legend: LegendItem[];
 }
 
 const WMS_BASE = 'http://ldn-africa.oss-online.org/api/clip/wms';
@@ -25,6 +31,17 @@ const LAYER_CATEGORIES: LayerCategory[] = [
   {
     id: 'lc-oss',
     label: 'Land Cover OSS',
+    legend: [
+      { label: 'Forêt', color: '#055b02' },
+      { label: 'Parcours', color: '#d2c71b' },
+      { label: 'Agriculture irriguée', color: '#c4c48a' },
+      { label: 'Agriculture pluviale', color: '#ed97dd' },
+      { label: 'Oasis', color: '#cb790f' },
+      { label: 'Plan d\'eau', color: '#2107dc' },
+      { label: 'Urbain', color: '#e60e13' },
+      { label: 'Sol nu', color: '#d2d1ce' },
+      { label: 'Dunes', color: '#bbd77f' },
+    ],
     layers: [
       { id: 'lc-oss-2000', label: 'Land Cover OSS 2000', workspace: 'LC', layerName: 'LC:clip_Tunisia_LandcoverOSS2000_fa1cacb3' },
       { id: 'lc-oss-2015', label: 'Land Cover OSS 2015', workspace: 'LC', layerName: 'LC:clip_Tunisia_LandcoverOSS2015_90ff905f' },
@@ -34,6 +51,15 @@ const LAYER_CATEGORIES: LayerCategory[] = [
   {
     id: 'lc-esa',
     label: 'Land Cover ESA CCI',
+    legend: [
+      { label: 'Couvert arboré', color: '#137412' },
+      { label: 'Prairie', color: '#cdc603' },
+      { label: 'Cultures', color: '#8d6e8e' },
+      { label: 'Zone humide', color: '#26a7a3' },
+      { label: 'Zone artificielle', color: '#b60713' },
+      { label: 'Sol nu', color: '#d6d3ce' },
+      { label: 'Plan d\'eau', color: '#122cfd' },
+    ],
     layers: [
       { id: 'lc-esa-2000', label: 'Land Cover ESA 2000', workspace: 'LC-ESA', layerName: 'LC-ESA:clip_Tunisia_LandCoverESACCI_2000_COG_4dcef0ad' },
       { id: 'lc-esa-2010', label: 'Land Cover ESA 2010', workspace: 'LC-ESA', layerName: 'LC-ESA:clip_Tunisia_LandCoverESACCI_2010_COG_b03a1c8a' },
@@ -43,6 +69,11 @@ const LAYER_CATEGORIES: LayerCategory[] = [
   {
     id: 'lcc',
     label: 'Land Cover Change',
+    legend: [
+      { label: 'En déclin', color: '#d90000' },
+      { label: 'Stable', color: '#9a9270' },
+      { label: 'En augmentation', color: '#2a670f' },
+    ],
     layers: [
       { id: 'lcc-baseline', label: 'LC Change — Baseline', workspace: 'LCC', layerName: 'LCC:clip_Tunisia_LC_Change_OSS_Baseline_COG_dd81f258' },
       { id: 'lcc-reporting', label: 'LC Change — Reporting', workspace: 'LCC', layerName: 'LCC:clip_Tunisia_LC_change_OSS_Reporting_COG_239dc6d5' },
@@ -51,17 +82,29 @@ const LAYER_CATEGORIES: LayerCategory[] = [
   {
     id: 'lp',
     label: 'Land Productivity',
+    legend: [
+      { label: 'En déclin', color: '#c0091c' },
+      { label: 'Déclin modéré', color: '#d65987' },
+      { label: 'Stable mais stressé', color: '#e9a530' },
+      { label: 'Stable', color: '#adafaa' },
+      { label: 'En augmentation', color: '#12a912' },
+    ],
     layers: [
-      { id: 'lp-jrc', label: 'JRC', workspace: 'LP', layerName: 'LP:clip_Tunisia_JRC_1_cc30d4eb' },
-      { id: 'lp-fao', label: 'LPD FAO', workspace: 'LP', layerName: 'LP:clip_Tunisia_LPD_FAO1_464b4789' },
-      { id: 'lp-baseline', label: 'LP OSS — Baseline', workspace: 'LP', layerName: 'LP:clip_Tunisia_LP_OSS_Baseline_COG_6470fb90' },
-      { id: 'lp-reporting', label: 'LP OSS — Reporting', workspace: 'LP', layerName: 'LP:clip_Tunisia_LP_OSS_reporting_COG_fcd22417' },
-      { id: 'lp-trends', label: 'Trends', workspace: 'LP', layerName: 'LP:clip_Tunisia_Trends_5df26ecd' },
+      { id: 'lp-jrc', label: 'JRC', workspace: 'LP', layerName: 'LP:clip_Tunisia_JRC_1_cc30d4eb', legendKey: 'lp-jrc' },
+      { id: 'lp-fao', label: 'LPD FAO', workspace: 'LP', layerName: 'LP:clip_Tunisia_LPD_FAO1_464b4789', legendKey: 'lp-jrc' },
+      { id: 'lp-baseline', label: 'LP OSS — Baseline', workspace: 'LP', layerName: 'LP:clip_Tunisia_LP_OSS_Baseline_COG_6470fb90', legendKey: 'lp-oss' },
+      { id: 'lp-reporting', label: 'LP OSS — Reporting', workspace: 'LP', layerName: 'LP:clip_Tunisia_LP_OSS_reporting_COG_fcd22417', legendKey: 'lp-oss' },
+      { id: 'lp-trends', label: 'Trends', workspace: 'LP', layerName: 'LP:clip_Tunisia_Trends_5df26ecd', legendKey: 'lp-jrc' },
     ],
   },
   {
     id: 'soc',
     label: 'Soil Organic Carbon',
+    legend: [
+      { label: 'Dégradé', color: '#b60000' },
+      { label: 'Stable', color: '#d2cfb2' },
+      { label: 'Amélioré', color: '#147d02' },
+    ],
     layers: [
       { id: 'soc-baseline', label: 'SOC — Baseline', workspace: 'SoilOrganicCarbon', layerName: 'SoilOrganicCarbon:clip_Tunisia_SOC_baseline_COG_642d3fab' },
       { id: 'soc-reporting', label: 'SOC — Reporting', workspace: 'SoilOrganicCarbon', layerName: 'SoilOrganicCarbon:clip_Tunisia_SOC_reporting_COG_f2a23a3d' },
@@ -70,6 +113,11 @@ const LAYER_CATEGORIES: LayerCategory[] = [
   {
     id: 'sdg',
     label: 'SDG 15.3.1',
+    legend: [
+      { label: 'Dégradé', color: '#b60000' },
+      { label: 'Stable', color: '#d2cfb2' },
+      { label: 'Amélioré', color: '#147d02' },
+    ],
     layers: [
       { id: 'sdg-baseline', label: 'SDG 15.3.1 — Baseline', workspace: 'SDG', layerName: 'SDG:clip_Tunisia_sdg_15_3_1_baseline_COG_a21cb4a3' },
       { id: 'sdg-reporting', label: 'SDG 15.3.1 — Reporting', workspace: 'SDG', layerName: 'SDG:clip_Tunisia_sdg_15_3_1_reporting_COG_cfe1092e' },
@@ -78,6 +126,13 @@ const LAYER_CATEGORIES: LayerCategory[] = [
   {
     id: 'so3',
     label: 'Precipitation Index (SPI)',
+    legend: [
+      { label: 'Pas de sécheresse', color: '#1a9850' },
+      { label: 'Sécheresse légère', color: '#ffffb2' },
+      { label: 'Sécheresse modérée', color: '#fecc5c' },
+      { label: 'Sécheresse sévère', color: '#fd8d3c' },
+      { label: 'Sécheresse extrême', color: '#bd0026' },
+    ],
     layers: [
       { id: 'so3-00-03', label: 'SPI min 2000–2003', workspace: 'SO3', layerName: 'SO3:clip_Tunisia_band_01_SPI_min_2000-2003_COG_45d8989a' },
       { id: 'so3-04-07', label: 'SPI min 2004–2007', workspace: 'SO3', layerName: 'SO3:clip_Tunisia_band_03_SPI_min_2004-2007_COG_e53df56c' },
@@ -88,6 +143,22 @@ const LAYER_CATEGORIES: LayerCategory[] = [
     ],
   },
 ];
+
+/* Land Productivity has two different legend sets depending on sub-layer */
+const LP_LEGENDS: Record<string, LegendItem[]> = {
+  'lp-jrc': [
+    { label: 'En déclin', color: '#c0091c' },
+    { label: 'Déclin modéré', color: '#d65987' },
+    { label: 'Stable mais stressé', color: '#e9a530' },
+    { label: 'Stable', color: '#adafaa' },
+    { label: 'En augmentation', color: '#12a912' },
+  ],
+  'lp-oss': [
+    { label: 'En déclin', color: '#d90000' },
+    { label: 'Stable', color: '#9a9270' },
+    { label: 'En augmentation', color: '#2a670f' },
+  ],
+};
 
 type BaseMap = 'satellite' | 'osm';
 
@@ -101,6 +172,16 @@ const BASE_MAPS: Record<BaseMap, { url: string; opts: L.TileLayerOptions }> = {
     opts: { maxZoom: 19, attribution: '&copy; OpenStreetMap' },
   },
 };
+
+/* ─── Helper: get legend for a specific layer ─── */
+function getLegendForLayer(cat: LayerCategory, layerId: string): LegendItem[] {
+  if (cat.id === 'lp') {
+    const layer = cat.layers.find((l) => l.id === layerId);
+    const key = (layer as any)?.legendKey ?? 'lp-jrc';
+    return LP_LEGENDS[key] ?? cat.legend;
+  }
+  return cat.legend;
+}
 
 /* ─── Component ─── */
 
@@ -116,6 +197,9 @@ export default function Geoportail() {
   const [layerOpacity, setLayerOpacity] = useState(1);
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
 
+  /* Find the active layer's category and legend */
+  const activeCat = LAYER_CATEGORIES.find((c) => c.layers.some((l) => l.id === activeLayerId));
+  const activeLegend = activeLayerId && activeCat ? getLegendForLayer(activeCat, activeLayerId) : null;
 
   /* Initialize map */
   useEffect(() => {
@@ -127,7 +211,7 @@ export default function Geoportail() {
       zoomControl: false,
     });
 
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.control.zoom({ position: 'topright' }).addTo(map);
 
     baseLayerRef.current = L.tileLayer(
       BASE_MAPS.satellite.url,
@@ -155,7 +239,6 @@ export default function Geoportail() {
 
   /* Select a single layer — removes previous one first */
   const selectLayer = useCallback((layer: LayerDef) => {
-    /* If clicking the same layer, toggle it off */
     if (activeLayerIdRef.current === layer.id) {
       if (activeWmsRef.current && mapRef.current) {
         mapRef.current.removeLayer(activeWmsRef.current);
@@ -166,12 +249,10 @@ export default function Geoportail() {
       return;
     }
 
-    /* Remove previous WMS layer */
     if (activeWmsRef.current && mapRef.current) {
       mapRef.current.removeLayer(activeWmsRef.current);
     }
 
-    /* Add new WMS layer */
     const wms = L.tileLayer.wms(`${WMS_BASE}?workspace=${layer.workspace}`, {
       layers: layer.layerName,
       format: 'image/png',
@@ -191,9 +272,15 @@ export default function Geoportail() {
     if (activeWmsRef.current) activeWmsRef.current.setOpacity(value);
   }, []);
 
-  /* Toggle category */
+  /* Toggle category — accordion style */
   const toggleCategory = (catId: string) => {
-    setOpenCategories((prev) => ({ ...prev, [catId]: !prev[catId] }));
+    setOpenCategories((prev) => {
+      if (prev[catId]) return { ...prev, [catId]: false };
+      const next: Record<string, boolean> = {};
+      for (const key of Object.keys(prev)) next[key] = false;
+      next[catId] = true;
+      return next;
+    });
   };
 
   return (
@@ -203,6 +290,26 @@ export default function Geoportail() {
       <div className="relative w-full h-screen overflow-hidden pt-16">
         {/* Map */}
         <div ref={mapContainerRef} className="absolute inset-0 z-0" />
+
+        {/* Legend overlay — bottom right of map */}
+        {activeLegend && (
+          <div className="absolute bottom-6 right-6 z-[998] bg-umbrella-dark/90 backdrop-blur-md rounded-lg shadow-xl p-3 min-w-[160px]">
+            <p className="text-[8px] font-bold uppercase tracking-[0.15em] text-white/40 mb-2">
+              Légende
+            </p>
+            <div className="space-y-1">
+              {activeLegend.map((item) => (
+                <div key={item.label} className="flex items-center gap-2">
+                  <span
+                    className="w-3 h-3 rounded-sm shrink-0 border border-white/10"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-[10px] text-white/70 leading-none">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Sidebar */}
         <div className="absolute top-16 left-0 z-[999]">
@@ -242,7 +349,7 @@ export default function Geoportail() {
             </div>
 
             {/* Layer categories */}
-            <div className="flex-1 px-4 py-3">
+            <div className="flex-1 overflow-y-auto px-4 py-3 geo-sidebar-scroll">
               {LAYER_CATEGORIES.map((cat) => (
                 <div key={cat.id} className="mb-1">
                   {/* Category header */}
@@ -283,7 +390,6 @@ export default function Geoportail() {
                             >
                               {layer.label}
                             </span>
-                            {/* Radio dot */}
                             <span
                               className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition-all ${
                                 activeLayerId === layer.id
@@ -298,13 +404,15 @@ export default function Geoportail() {
                           </div>
                         </div>
                       ))}
+
+
                     </div>
                   )}
                 </div>
               ))}
             </div>
 
-            {/* Opacity slider (global, shown when a layer is active) */}
+            {/* Opacity slider */}
             {activeLayerId && (
               <div className="px-5 py-3 border-t border-white/10 bg-white/5">
                 <div className="flex items-center gap-3">
