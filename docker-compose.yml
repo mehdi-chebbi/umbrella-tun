@@ -31,6 +31,8 @@ services:
       DB_PASSWORD: umbrella_pass
       JWT_SECRET: umbrella-jwt-secret-change-in-production
       JWT_EXPIRES_IN: 24h
+      OPENROUTER_API_KEY: your-openrouter-api-key-here
+      OPENROUTER_MODEL: qwen/qwen3-235b-a22b-2507
       PORT: 4000
     ports:
       - "4000:4000"

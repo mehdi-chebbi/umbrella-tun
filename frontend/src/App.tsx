@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Home from './pages/Home';
 import About from './pages/About';
 import Partners from './pages/Partners';
@@ -8,9 +9,20 @@ import AdminLayout from './pages/admin/Layout';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
 import ProtectedRoute from './components/ProtectedRoute';
+import ChatAgent from './components/ChatAgent';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 
 function App() {
   return (
+    <>
+    <ScrollToTop />
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/a-propos" element={<About />} />
@@ -31,6 +43,8 @@ function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    <ChatAgent />
+    </>
   );
 }
 

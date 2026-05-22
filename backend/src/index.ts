@@ -9,6 +9,7 @@ import { query } from './db/connection.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import contentRoutes from './routes/content.js';
+import chatRoutes from './routes/chat.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,6 +36,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/chat', chatRoutes);
 
 // ─── Health Check ───────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
