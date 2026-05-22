@@ -1,7 +1,7 @@
 services:
   # ─── PostgreSQL Database ──────────────────────────────────────
   db:
-    image: postgres:16-alpine
+    image: postgis/postgis:15-3.3-alpine
     container_name: umbrella-db
     restart: unless-stopped
     environment:
@@ -17,6 +17,30 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # ─── GeoServer ────────────────────────────────────────────────
+  geoserver:
+    image: kartoza/geoserver:2.24.0
+    container_name: umbrella-geoserver
+    restart: unless-stopped
+    environment:
+      GEOSERVER_ADMIN_USER: admin
+      GEOSERVER_ADMIN_PASSWORD: geoserver
+    ports:
+      - "8081:8080"
+    volumes:
+      - geoserver_data:/opt/geoserver/data_dir
+      - ./data/tiffs:/data/tiffs:ro
+      - clipped_rasters:/opt/clipped-rasters:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/geoserver/web/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      db:
+        condition: service_healthy
 
   # ─── Express Backend API ─────────────────────────────────────
   backend:
@@ -34,10 +58,50 @@ services:
       OPENROUTER_API_KEY: your-openrouter-api-key-here
       OPENROUTER_MODEL: qwen/qwen3-235b-a22b-2507
       PORT: 4000
+      GEOSERVER_REST_URL: http://geoserver:8080/geoserver/rest
+      GEOSERVER_WMS_URL: http://geoserver:8080/geoserver
+      GEOSERVER_USER: admin
+      GEOSERVER_PASSWORD: geoserver
+      CLIP_SERVICE_URL: http://clip-service:3005
+      GEOJSON_DIR: /app/geojson
+    volumes:
+      - ./mini-services/clip-service/geojson:/app/geojson:ro
+      - ./data/tiffs:/data/tiffs:ro
     ports:
       - "4000:4000"
     depends_on:
       db:
+        condition: service_healthy
+      geoserver:
+        condition: service_healthy
+
+  # ─── Clipping Microservice ───────────────────────────────────
+  clip-service:
+    build: ./mini-services/clip-service
+    container_name: umbrella-clip-service
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    volumes:
+      - ./mini-services/clip-service/geojson:/app/geojson:ro
+      - ./data/tiffs:/data/tiffs:ro
+      - clipped_rasters:/data/clipped-rasters
+    environment:
+      GEOSERVER_URL: http://geoserver:8080/geoserver
+      GEOSERVER_USER: admin
+      GEOSERVER_PASSWORD: geoserver
+      OUTPUT_DIR: /data/clipped-rasters
+      GEOSERVER_FILE_BASE: /opt/clipped-rasters
+      GEOJSON_DIR: /app/geojson
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: umbrella
+      DB_USER: umbrella_user
+      DB_PASSWORD: umbrella_pass
+    depends_on:
+      db:
+        condition: service_healthy
+      geoserver:
         condition: service_healthy
 
   # ─── React Frontend (Nginx) ──────────────────────────────────
@@ -49,6 +113,9 @@ services:
       - "8080:80"
     depends_on:
       - backend
+      - geoserver
 
 volumes:
   pgdata:
+  geoserver_data:
+  clipped_rasters:

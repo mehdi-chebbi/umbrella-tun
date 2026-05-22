@@ -8,6 +8,8 @@ import AdminLogin from './pages/admin/Login';
 import AdminLayout from './pages/admin/Layout';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
+import AdminLayers from './pages/admin/Layers';
+import AdminClips from './pages/admin/Clips';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatAgent from './components/ChatAgent';
 
@@ -40,6 +42,8 @@ function App() {
         <Route index element={<Navigate to="/admin" replace />} />
         <Route path="" element={<AdminDashboard />} />
         <Route path="utilisateurs" element={<AdminUsers />} />
+        <Route path="couches" element={<AdminLayers />} />
+        <Route path="decoupages" element={<AdminClips />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

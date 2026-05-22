@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { LayoutDashboard, Users, LogOut, Menu, X, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Menu, X, ChevronRight, Layers, Scissors } from 'lucide-react';
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
@@ -59,6 +59,14 @@ export default function AdminLayout() {
           <NavLink to="/admin/utilisateurs" className={navLinkClass} onClick={() => setSidebarOpen(false)}>
             <Users size={18} strokeWidth={1.5} />
             <span>Utilisateurs</span>
+          </NavLink>
+          <NavLink to="/admin/couches" className={navLinkClass} onClick={() => setSidebarOpen(false)}>
+            <Layers size={18} strokeWidth={1.5} />
+            <span>Couches</span>
+          </NavLink>
+          <NavLink to="/admin/decoupages" className={navLinkClass} onClick={() => setSidebarOpen(false)}>
+            <Scissors size={18} strokeWidth={1.5} />
+            <span>Découpages</span>
           </NavLink>
         </nav>
 

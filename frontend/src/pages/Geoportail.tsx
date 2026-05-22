@@ -1,164 +1,58 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronDown, ChevronRight, Map, Satellite } from 'lucide-react';
+import { ChevronDown, ChevronRight, Map, Satellite, PenTool, X, BarChart3, Loader2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-draw/dist/leaflet.draw.css';
+import 'leaflet-draw';
 import Navbar from '@/components/Navbar';
+import api from '@/services/api';
 
-/* ─── Layer definitions ─── */
-
-interface LayerDef {
-  id: string;
-  label: string;
-  workspace: string;
-  layerName: string;
-}
+/* ─── Types ─── */
 
 interface LegendItem {
-  label: string;
+  class?: string | { en: string; fr: string };
+  label?: string;
   color: string;
 }
 
-interface LayerCategory {
-  id: string;
-  label: string;
-  layers: LayerDef[];
-  legend: LegendItem[];
+interface LayerDef {
+  id: number;
+  name: string;
+  geoserver_name: string;
+  layerName: string;
+  wmsUrl: string;
+  hasStats: boolean;
+  group_id: number | null;
+  group_name: string | null;
+  group_legend: LegendItem[] | null;
+  legend: LegendItem[] | null;
 }
 
-const WMS_BASE = 'http://ldn-africa.oss-online.org/api/clip/wms';
+interface LayerGroup {
+  id: number;
+  name: string;
+  description: string | null;
+  legend: LegendItem[] | null;
+  parent_id: number | null;
+  children: LayerGroup[];
+  layers: LayerDef[];
+}
 
-const LAYER_CATEGORIES: LayerCategory[] = [
-  {
-    id: 'lc-oss',
-    label: 'Land Cover OSS',
-    legend: [
-      { label: 'Forêt', color: '#055b02' },
-      { label: 'Parcours', color: '#d2c71b' },
-      { label: 'Agriculture irriguée', color: '#c4c48a' },
-      { label: 'Agriculture pluviale', color: '#ed97dd' },
-      { label: 'Oasis', color: '#cb790f' },
-      { label: 'Plan d\'eau', color: '#2107dc' },
-      { label: 'Urbain', color: '#e60e13' },
-      { label: 'Sol nu', color: '#d2d1ce' },
-      { label: 'Dunes', color: '#bbd77f' },
-    ],
-    layers: [
-      { id: 'lc-oss-2000', label: 'Land Cover OSS 2000', workspace: 'LC', layerName: 'LC:clip_Tunisia_LandcoverOSS2000_fa1cacb3' },
-      { id: 'lc-oss-2015', label: 'Land Cover OSS 2015', workspace: 'LC', layerName: 'LC:clip_Tunisia_LandcoverOSS2015_90ff905f' },
-      { id: 'lc-oss-2023', label: 'Land Cover OSS 2023', workspace: 'LC', layerName: 'LC:clip_Tunisia_LandCoverOSS2023V2COG_0176672e' },
-    ],
-  },
-  {
-    id: 'lc-esa',
-    label: 'Land Cover ESA CCI',
-    legend: [
-      { label: 'Couvert arboré', color: '#137412' },
-      { label: 'Prairie', color: '#cdc603' },
-      { label: 'Cultures', color: '#8d6e8e' },
-      { label: 'Zone humide', color: '#26a7a3' },
-      { label: 'Zone artificielle', color: '#b60713' },
-      { label: 'Sol nu', color: '#d6d3ce' },
-      { label: 'Plan d\'eau', color: '#122cfd' },
-    ],
-    layers: [
-      { id: 'lc-esa-2000', label: 'Land Cover ESA 2000', workspace: 'LC-ESA', layerName: 'LC-ESA:clip_Tunisia_LandCoverESACCI_2000_COG_4dcef0ad' },
-      { id: 'lc-esa-2010', label: 'Land Cover ESA 2010', workspace: 'LC-ESA', layerName: 'LC-ESA:clip_Tunisia_LandCoverESACCI_2010_COG_b03a1c8a' },
-      { id: 'lc-esa-2015', label: 'Land Cover ESA 2015', workspace: 'LC-ESA', layerName: 'LC-ESA:clip_Tunisia_LandCoverESACCI_2015_COG_b8e004f3' },
-    ],
-  },
-  {
-    id: 'lcc',
-    label: 'Land Cover Change',
-    legend: [
-      { label: 'En déclin', color: '#d90000' },
-      { label: 'Stable', color: '#9a9270' },
-      { label: 'En augmentation', color: '#2a670f' },
-    ],
-    layers: [
-      { id: 'lcc-baseline', label: 'LC Change — Baseline', workspace: 'LCC', layerName: 'LCC:clip_Tunisia_LC_Change_OSS_Baseline_COG_dd81f258' },
-      { id: 'lcc-reporting', label: 'LC Change — Reporting', workspace: 'LCC', layerName: 'LCC:clip_Tunisia_LC_change_OSS_Reporting_COG_239dc6d5' },
-    ],
-  },
-  {
-    id: 'lp',
-    label: 'Land Productivity',
-    legend: [
-      { label: 'En déclin', color: '#c0091c' },
-      { label: 'Déclin modéré', color: '#d65987' },
-      { label: 'Stable mais stressé', color: '#e9a530' },
-      { label: 'Stable', color: '#adafaa' },
-      { label: 'En augmentation', color: '#12a912' },
-    ],
-    layers: [
-      { id: 'lp-jrc', label: 'JRC', workspace: 'LP', layerName: 'LP:clip_Tunisia_JRC_1_cc30d4eb', legendKey: 'lp-jrc' },
-      { id: 'lp-fao', label: 'LPD FAO', workspace: 'LP', layerName: 'LP:clip_Tunisia_LPD_FAO1_464b4789', legendKey: 'lp-jrc' },
-      { id: 'lp-baseline', label: 'LP OSS — Baseline', workspace: 'LP', layerName: 'LP:clip_Tunisia_LP_OSS_Baseline_COG_6470fb90', legendKey: 'lp-oss' },
-      { id: 'lp-reporting', label: 'LP OSS — Reporting', workspace: 'LP', layerName: 'LP:clip_Tunisia_LP_OSS_reporting_COG_fcd22417', legendKey: 'lp-oss' },
-      { id: 'lp-trends', label: 'Trends', workspace: 'LP', layerName: 'LP:clip_Tunisia_Trends_5df26ecd', legendKey: 'lp-jrc' },
-    ],
-  },
-  {
-    id: 'soc',
-    label: 'Soil Organic Carbon',
-    legend: [
-      { label: 'Dégradé', color: '#b60000' },
-      { label: 'Stable', color: '#d2cfb2' },
-      { label: 'Amélioré', color: '#147d02' },
-    ],
-    layers: [
-      { id: 'soc-baseline', label: 'SOC — Baseline', workspace: 'SoilOrganicCarbon', layerName: 'SoilOrganicCarbon:clip_Tunisia_SOC_baseline_COG_642d3fab' },
-      { id: 'soc-reporting', label: 'SOC — Reporting', workspace: 'SoilOrganicCarbon', layerName: 'SoilOrganicCarbon:clip_Tunisia_SOC_reporting_COG_f2a23a3d' },
-    ],
-  },
-  {
-    id: 'sdg',
-    label: 'SDG 15.3.1',
-    legend: [
-      { label: 'Dégradé', color: '#b60000' },
-      { label: 'Stable', color: '#d2cfb2' },
-      { label: 'Amélioré', color: '#147d02' },
-    ],
-    layers: [
-      { id: 'sdg-baseline', label: 'SDG 15.3.1 — Baseline', workspace: 'SDG', layerName: 'SDG:clip_Tunisia_sdg_15_3_1_baseline_COG_a21cb4a3' },
-      { id: 'sdg-reporting', label: 'SDG 15.3.1 — Reporting', workspace: 'SDG', layerName: 'SDG:clip_Tunisia_sdg_15_3_1_reporting_COG_cfe1092e' },
-    ],
-  },
-  {
-    id: 'so3',
-    label: 'Precipitation Index (SPI)',
-    legend: [
-      { label: 'Pas de sécheresse', color: '#1a9850' },
-      { label: 'Sécheresse légère', color: '#ffffb2' },
-      { label: 'Sécheresse modérée', color: '#fecc5c' },
-      { label: 'Sécheresse sévère', color: '#fd8d3c' },
-      { label: 'Sécheresse extrême', color: '#bd0026' },
-    ],
-    layers: [
-      { id: 'so3-00-03', label: 'SPI min 2000–2003', workspace: 'SO3', layerName: 'SO3:clip_Tunisia_band_01_SPI_min_2000-2003_COG_45d8989a' },
-      { id: 'so3-04-07', label: 'SPI min 2004–2007', workspace: 'SO3', layerName: 'SO3:clip_Tunisia_band_03_SPI_min_2004-2007_COG_e53df56c' },
-      { id: 'so3-08-11', label: 'SPI min 2008–2011', workspace: 'SO3', layerName: 'SO3:clip_Tunisia_band_05_SPI_min_2008-2011_COG_ccf1261e' },
-      { id: 'so3-12-15', label: 'SPI min 2012–2015', workspace: 'SO3', layerName: 'SO3:clip_Tunisia_band_07_SPI_min_2012-2015_COG_6e83982e' },
-      { id: 'so3-16-19', label: 'SPI min 2016–2019', workspace: 'SO3', layerName: 'SO3:clip_Tunisia_band_09_SPI_min_2016-2019_COG_4b0b500e' },
-      { id: 'so3-20-23', label: 'SPI min 2020–2023', workspace: 'SO3', layerName: 'SO3:clip_Tunisia_band_11_SPI_min_2020-2023_COG_c5100602' },
-    ],
-  },
-];
+interface StatClass {
+  class_id: number;
+  class_name: string;
+  area_km2: number;
+  percentage: number;
+}
 
-/* Land Productivity has two different legend sets depending on sub-layer */
-const LP_LEGENDS: Record<string, LegendItem[]> = {
-  'lp-jrc': [
-    { label: 'En déclin', color: '#c0091c' },
-    { label: 'Déclin modéré', color: '#d65987' },
-    { label: 'Stable mais stressé', color: '#e9a530' },
-    { label: 'Stable', color: '#adafaa' },
-    { label: 'En augmentation', color: '#12a912' },
-  ],
-  'lp-oss': [
-    { label: 'En déclin', color: '#d90000' },
-    { label: 'Stable', color: '#9a9270' },
-    { label: 'En augmentation', color: '#2a670f' },
-  ],
-};
+interface StatsResult {
+  layer_name: string;
+  total_area_km2: number;
+  pixel_size_m: number;
+  classes: StatClass[];
+}
+
+const WMS_BASE = '/api/clip/wms';
 
 type BaseMap = 'satellite' | 'osm';
 
@@ -173,16 +67,6 @@ const BASE_MAPS: Record<BaseMap, { url: string; opts: L.TileLayerOptions }> = {
   },
 };
 
-/* ─── Helper: get legend for a specific layer ─── */
-function getLegendForLayer(cat: LayerCategory, layerId: string): LegendItem[] {
-  if (cat.id === 'lp') {
-    const layer = cat.layers.find((l) => l.id === layerId);
-    const key = (layer as any)?.legendKey ?? 'lp-jrc';
-    return LP_LEGENDS[key] ?? cat.legend;
-  }
-  return cat.legend;
-}
-
 /* ─── Component ─── */
 
 export default function Geoportail() {
@@ -190,16 +74,62 @@ export default function Geoportail() {
   const mapRef = useRef<L.Map | null>(null);
   const baseLayerRef = useRef<L.TileLayer | null>(null);
   const activeWmsRef = useRef<L.TileLayer.WMS | null>(null);
-  const activeLayerIdRef = useRef<string | null>(null);
+  const activeLayerRef = useRef<LayerDef | null>(null);
+  const drawnItemsRef = useRef<L.FeatureGroup | null>(null);
 
   const [baseMap, setBaseMap] = useState<BaseMap>('satellite');
-  const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
+  const [activeLayerId, setActiveLayerId] = useState<number | null>(null);
   const [layerOpacity, setLayerOpacity] = useState(1);
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
+  const [openGroups, setOpenGroups] = useState<Record<number, boolean>>({});
+  const [groups, setGroups] = useState<LayerGroup[]>([]);
+  const [ungroupedLayers, setUngroupedLayers] = useState<LayerDef[]>([]);
+  const [layersLoading, setLayersLoading] = useState(true);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [statsResult, setStatsResult] = useState<StatsResult | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
 
-  /* Find the active layer's category and legend */
-  const activeCat = LAYER_CATEGORIES.find((c) => c.layers.some((l) => l.id === activeLayerId));
-  const activeLegend = activeLayerId && activeCat ? getLegendForLayer(activeCat, activeLayerId) : null;
+  const activeLayer = activeLayerId
+    ? [...ungroupedLayers, ...getAllLayers(groups)].find(l => l.id === activeLayerId) || null
+    : null;
+
+  const activeLegend = activeLayer?.legend || activeLayer?.group_legend || null;
+
+  /* Helper: flatten all layers from nested groups */
+  function getAllLayers(groups: LayerGroup[]): LayerDef[] {
+    const result: LayerDef[] = [];
+    for (const g of groups) {
+      result.push(...g.layers);
+      if (g.children.length > 0) result.push(...getAllLayers(g.children));
+    }
+    return result;
+  }
+
+  /* Helper: get legend label from item */
+  function getLegendLabel(item: LegendItem): string {
+    if (item.label) return item.label;
+    if (item.class) {
+      if (typeof item.class === 'object') return item.class.fr || item.class.en;
+      return item.class;
+    }
+    return '';
+  }
+
+  /* Load layers from API */
+  useEffect(() => {
+    const fetchLayers = async () => {
+      try {
+        const response = await api.get('/clip/layers');
+        setGroups(response.data.groups || []);
+        setUngroupedLayers(response.data.ungroupedLayers || []);
+      } catch {
+        // Silently fail — map still works without layers
+      } finally {
+        setLayersLoading(false);
+      }
+    };
+    fetchLayers();
+  }, []);
 
   /* Initialize map */
   useEffect(() => {
@@ -217,6 +147,11 @@ export default function Geoportail() {
       BASE_MAPS.satellite.url,
       BASE_MAPS.satellite.opts
     ).addTo(map);
+
+    // Initialize drawn items layer
+    const drawnItems = new L.FeatureGroup();
+    drawnItems.addTo(map);
+    drawnItemsRef.current = drawnItems;
 
     mapRef.current = map;
 
@@ -237,14 +172,28 @@ export default function Geoportail() {
     baseLayerRef.current.bringToBack();
   }, [baseMap]);
 
-  /* Select a single layer — removes previous one first */
+  /* Cancel any active drawing */
+  const cancelDrawing = useCallback(() => {
+    if (!mapRef.current) return;
+    const drawControl = (mapRef.current as any)._drawControlRef;
+    if (drawControl) {
+      try { mapRef.current.removeControl(drawControl); } catch {}
+      delete (mapRef.current as any)._drawControlRef;
+    }
+    setIsDrawing(false);
+  }, []);
+
+  /* Select a layer */
   const selectLayer = useCallback((layer: LayerDef) => {
-    if (activeLayerIdRef.current === layer.id) {
+    // Cancel any active drawing when switching layers
+    cancelDrawing();
+
+    if (activeLayerRef.current?.id === layer.id) {
       if (activeWmsRef.current && mapRef.current) {
         mapRef.current.removeLayer(activeWmsRef.current);
       }
       activeWmsRef.current = null;
-      activeLayerIdRef.current = null;
+      activeLayerRef.current = null;
       setActiveLayerId(null);
       return;
     }
@@ -253,7 +202,7 @@ export default function Geoportail() {
       mapRef.current.removeLayer(activeWmsRef.current);
     }
 
-    const wms = L.tileLayer.wms(`${WMS_BASE}?workspace=${layer.workspace}`, {
+    const wms = L.tileLayer.wms(layer.wmsUrl, {
       layers: layer.layerName,
       format: 'image/png',
       transparent: true,
@@ -262,9 +211,9 @@ export default function Geoportail() {
     });
     if (mapRef.current) wms.addTo(mapRef.current);
     activeWmsRef.current = wms;
-    activeLayerIdRef.current = layer.id;
+    activeLayerRef.current = layer;
     setActiveLayerId(layer.id);
-  }, [layerOpacity]);
+  }, [layerOpacity, cancelDrawing]);
 
   /* Change opacity */
   const changeOpacity = useCallback((value: number) => {
@@ -272,16 +221,162 @@ export default function Geoportail() {
     if (activeWmsRef.current) activeWmsRef.current.setOpacity(value);
   }, []);
 
-  /* Toggle category — accordion style */
-  const toggleCategory = (catId: string) => {
-    setOpenCategories((prev) => {
-      if (prev[catId]) return { ...prev, [catId]: false };
-      const next: Record<string, boolean> = {};
-      for (const key of Object.keys(prev)) next[key] = false;
-      next[catId] = true;
-      return next;
-    });
+  /* Toggle group accordion */
+  const toggleGroup = (groupId: number) => {
+    setOpenGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
   };
+
+  /* ─── Draw polygon & compute stats ─── */
+  const startDrawing = useCallback(() => {
+    if (!mapRef.current || !drawnItemsRef.current) return;
+
+    // Clear previous drawings
+    drawnItemsRef.current.clearLayers();
+    setStatsResult(null);
+    setStatsError('');
+    setIsDrawing(true);
+
+    // Remove existing draw control if any
+    const existingControl = (mapRef.current as any)._drawControlRef;
+    if (existingControl) {
+      try { mapRef.current.removeControl(existingControl); } catch {}
+    }
+
+    const drawControl = new (L as any).Control.Draw({
+      position: 'topright',
+      draw: {
+        polygon: {
+          shapeOptions: { color: '#2D6A4F', weight: 2, fillOpacity: 0.1 },
+          showArea: true,
+        },
+        polyline: false,
+        rectangle: false,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+      },
+      edit: {
+        featureGroup: drawnItemsRef.current,
+      },
+    });
+
+    mapRef.current.addControl(drawControl);
+    (mapRef.current as any)._drawControlRef = drawControl;
+
+    // Auto-trigger polygon draw tool
+    const polygonBtn = document.querySelector('.leaflet-draw-draw-polygon') as HTMLElement;
+    if (polygonBtn) polygonBtn.click();
+  }, []);
+
+  /* Listen for draw:complete */
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const handleDrawCreated = async (e: any) => {
+      const layer = e.layer;
+      drawnItemsRef.current?.addLayer(layer);
+      setIsDrawing(false);
+
+      // Remove the draw control toolbar after completing
+      const drawControl = (mapRef.current as any)?._drawControlRef;
+      if (drawControl) {
+        try { mapRef.current?.removeControl(drawControl); } catch {}
+        if (mapRef.current) delete (mapRef.current as any)._drawControlRef;
+      }
+
+      const activeL = activeLayerRef.current;
+      if (!activeL || !activeL.hasStats) {
+        setStatsError('Sélectionnez une couche avec des statistiques disponibles pour calculer les stats.');
+        return;
+      }
+
+      // Get polygon GeoJSON
+      const geojson = layer.toGeoJSON();
+      const polygon = geojson.geometry;
+
+      setStatsLoading(true);
+      setStatsError('');
+      setStatsResult(null);
+
+      try {
+        const response = await api.post('/clip/stats', {
+          layer_name: activeL.geoserver_name,
+          polygon
+        });
+        setStatsResult(response.data);
+      } catch (err: any) {
+        setStatsError(err.response?.data?.error || 'Erreur lors du calcul des statistiques');
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    mapRef.current.on(L.Draw.Event.CREATED, handleDrawCreated);
+
+    return () => {
+      mapRef.current?.off(L.Draw.Event.CREATED, handleDrawCreated);
+    };
+  }, []);
+
+  /* Clear stats & polygon */
+  const clearStats = useCallback(() => {
+    drawnItemsRef.current?.clearLayers();
+    setStatsResult(null);
+    setStatsError('');
+  }, []);
+
+  /* ─── Render groups recursively ─── */
+  const renderGroup = (group: LayerGroup, depth = 0) => (
+    <div key={group.id}>
+      <button
+        onClick={() => toggleGroup(group.id)}
+        className="flex items-center gap-2 w-full py-2.5 px-2 rounded hover:bg-white/5 transition-colors text-left"
+        style={{ paddingLeft: `${depth * 16 + 8}px` }}
+      >
+        <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.12em]">
+          {group.name}
+        </span>
+        {openGroups[group.id] ? (
+          <ChevronDown size={13} className="text-white/30 ml-auto" />
+        ) : (
+          <ChevronRight size={13} className="text-white/30 ml-auto" />
+        )}
+      </button>
+
+      {openGroups[group.id] && (
+        <div style={{ paddingLeft: `${depth * 8}px` }}>
+          {/* Sub-groups */}
+          {group.children.map(child => renderGroup(child, depth + 1))}
+          {/* Layers in this group */}
+          {group.layers.map(layer => renderLayerItem(layer))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderLayerItem = (layer: LayerDef) => (
+    <div
+      key={layer.id}
+      className={`rounded px-3 py-2 transition-colors cursor-pointer ${
+        activeLayerId === layer.id
+          ? 'bg-umbrella-accent/20 border border-umbrella-accent/40'
+          : 'hover:bg-white/5'
+      }`}
+      onClick={() => selectLayer(layer)}
+    >
+      <div className="flex items-center justify-between">
+        <span className={`text-[11px] font-medium transition-colors ${activeLayerId === layer.id ? 'text-umbrella-accent-light' : 'text-white/50'}`}>
+          {layer.name}
+        </span>
+        <div className="flex items-center gap-1.5">
+          {layer.hasStats && <BarChart3 size={10} className="text-umbrella-accent/50" />}
+          <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition-all ${activeLayerId === layer.id ? 'border-umbrella-accent' : 'border-white/20'}`}>
+            {activeLayerId === layer.id && <span className="w-1.5 h-1.5 rounded-full bg-umbrella-accent" />}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-white text-black font-sans antialiased">
@@ -291,148 +386,156 @@ export default function Geoportail() {
         {/* Map */}
         <div ref={mapContainerRef} className="absolute inset-0 z-0" />
 
-        {/* Legend overlay — bottom right of map */}
-        {activeLegend && (
+        {/* Legend overlay — bottom right */}
+        {activeLegend && activeLegend.length > 0 && (
           <div className="absolute bottom-6 right-6 z-[998] bg-umbrella-dark/90 backdrop-blur-md rounded-lg shadow-xl p-3 min-w-[160px]">
-            <p className="text-[8px] font-bold uppercase tracking-[0.15em] text-white/40 mb-2">
-              Légende
-            </p>
+            <p className="text-[8px] font-bold uppercase tracking-[0.15em] text-white/40 mb-2">Légende</p>
             <div className="space-y-1">
-              {activeLegend.map((item) => (
-                <div key={item.label} className="flex items-center gap-2">
-                  <span
-                    className="w-3 h-3 rounded-sm shrink-0 border border-white/10"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="text-[10px] text-white/70 leading-none">{item.label}</span>
+              {activeLegend.map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm shrink-0 border border-white/10" style={{ backgroundColor: item.color }} />
+                  <span className="text-[10px] text-white/70 leading-none">{getLegendLabel(item)}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Sidebar */}
+        {/* ─── Stats Panel ─── */}
+        {(statsLoading || statsResult || statsError) && (
+          <div className="absolute top-20 right-4 z-[998] bg-white rounded-xl shadow-2xl border border-umbrella-border max-w-sm w-full overflow-hidden">
+            <div className="px-4 py-3 border-b border-umbrella-border flex items-center justify-between bg-umbrella-bg-alt">
+              <h3 className="text-sm font-semibold text-umbrella-text flex items-center gap-2">
+                <BarChart3 size={16} className="text-umbrella-accent" /> Statistiques
+              </h3>
+              <button onClick={clearStats} className="p-1 hover:bg-gray-200 rounded transition">
+                <X size={14} className="text-umbrella-text-secondary" />
+              </button>
+            </div>
+
+            {statsLoading && (
+              <div className="p-6 flex items-center justify-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-umbrella-accent" />
+                <span className="text-sm text-umbrella-text-secondary">Calcul en cours…</span>
+              </div>
+            )}
+
+            {statsError && (
+              <div className="p-4 text-sm text-red-600 bg-red-50">{statsError}</div>
+            )}
+
+            {statsResult && (
+              <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-umbrella-text-secondary">Surface totale</span>
+                  <span className="font-semibold text-umbrella-text">{statsResult.total_area_km2.toFixed(1)} km²</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-umbrella-text-secondary">Résolution pixel</span>
+                  <span className="font-semibold text-umbrella-text">{statsResult.pixel_size_m} m</span>
+                </div>
+
+                {/* Class breakdown */}
+                <div className="space-y-2 pt-2 border-t border-umbrella-border">
+                  {statsResult.classes
+                    .filter(c => c.percentage > 0)
+                    .sort((a, b) => b.percentage - a.percentage)
+                    .map(cls => (
+                      <div key={cls.class_id} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-umbrella-text font-medium">{cls.class_name}</span>
+                          <span className="text-umbrella-text-secondary">{cls.percentage}% · {cls.area_km2.toFixed(1)} km²</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="bg-umbrella-accent h-1.5 rounded-full transition-all" style={{ width: `${Math.min(cls.percentage, 100)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── Sidebar ─── */}
         <div className="absolute top-16 left-0 z-[999]">
           <div className="h-[calc(100vh-4rem)] w-72 bg-umbrella-dark flex flex-col">
             {/* Header */}
             <div className="px-5 py-5 border-b border-white/10">
-              <h2 className="font-serif text-lg text-white tracking-tight">Geoportal</h2>
-              <p className="text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.2em] font-semibold">
-                Map Layers
-              </p>
+              <h2 className="font-serif text-lg text-white tracking-tight">Géoportail</h2>
+              <p className="text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.2em] font-semibold">Couches cartographiques</p>
             </div>
 
             {/* Base map selector */}
             <div className="px-5 py-4 border-b border-white/10">
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 mb-3">
-                Base Map
-              </p>
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 mb-3">Fond de carte</p>
               <div className="flex gap-2">
                 {([
                   { key: 'satellite' as BaseMap, label: 'Satellite', icon: <Satellite size={13} /> },
                   { key: 'osm' as BaseMap, label: 'OSM', icon: <Map size={13} /> },
                 ]).map((bm) => (
-                  <button
-                    key={bm.key}
-                    onClick={() => setBaseMap(bm.key)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-semibold uppercase tracking-wider transition-all ${
-                      baseMap === bm.key
-                        ? 'bg-umbrella-accent text-white shadow-md'
-                        : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
-                    }`}
-                  >
-                    {bm.icon}
-                    {bm.label}
+                  <button key={bm.key} onClick={() => setBaseMap(bm.key)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-semibold uppercase tracking-wider transition-all ${baseMap === bm.key ? 'bg-umbrella-accent text-white shadow-md' : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'}`}>
+                    {bm.icon}{bm.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Layer categories */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 geo-sidebar-scroll">
-              {LAYER_CATEGORIES.map((cat) => (
-                <div key={cat.id} className="mb-1">
-                  {/* Category header */}
-                  <button
-                    onClick={() => toggleCategory(cat.id)}
-                    className="flex items-center gap-2 w-full py-2.5 px-2 rounded hover:bg-white/5 transition-colors text-left"
-                  >
-                    <span className="text-[11px] font-semibold text-white/80 uppercase tracking-[0.12em]">
-                      {cat.label}
-                    </span>
-                    {openCategories[cat.id] ? (
-                      <ChevronDown size={13} className="text-white/30 ml-auto" />
-                    ) : (
-                      <ChevronRight size={13} className="text-white/30 ml-auto" />
-                    )}
+            {/* Draw tool */}
+            {activeLayerId && activeLayer?.hasStats && (
+              <div className="px-5 py-3 border-b border-white/10">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 mb-2">Statistiques</p>
+                {isDrawing ? (
+                  <div className="flex gap-2">
+                    <p className="text-[11px] text-umbrella-accent-light flex-1">Dessinez un polygone sur la carte…</p>
+                    <button onClick={cancelDrawing} className="px-3 py-1.5 rounded text-[11px] font-semibold bg-red-500/20 text-red-400 hover:bg-red-500/30 transition">Annuler</button>
+                  </div>
+                ) : (
+                  <button onClick={startDrawing} className="flex items-center gap-2 px-3 py-2 rounded text-[11px] font-semibold bg-umbrella-accent/20 text-umbrella-accent-light hover:bg-umbrella-accent/30 transition w-full">
+                    <PenTool size={13} /> Dessiner une zone de calcul
                   </button>
+                )}
+              </div>
+            )}
 
-                  {/* Expanded layers */}
-                  {openCategories[cat.id] && (
-                    <div className="pl-3 pb-2 space-y-1">
-                      {cat.layers.map((layer) => (
-                        <div
-                          key={layer.id}
-                          className={`rounded px-3 py-2 transition-colors cursor-pointer ${
-                            activeLayerId === layer.id
-                              ? 'bg-umbrella-accent/20 border border-umbrella-accent/40'
-                              : 'hover:bg-white/5'
-                          }`}
-                          onClick={() => selectLayer(layer)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`text-[11px] font-medium transition-colors ${
-                                activeLayerId === layer.id
-                                  ? 'text-umbrella-accent-light'
-                                  : 'text-white/50'
-                              }`}
-                            >
-                              {layer.label}
-                            </span>
-                            <span
-                              className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition-all ${
-                                activeLayerId === layer.id
-                                  ? 'border-umbrella-accent'
-                                  : 'border-white/20'
-                              }`}
-                            >
-                              {activeLayerId === layer.id && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-umbrella-accent" />
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+            {/* Layer groups */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 geo-sidebar-scroll">
+              {layersLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-umbrella-accent" />
+                </div>
+              ) : (
+                <>
+                  {/* Groups */}
+                  {groups.map(group => renderGroup(group))}
 
-
+                  {/* Ungrouped layers */}
+                  {ungroupedLayers.length > 0 && (
+                    <div className="mt-2">
+                      {groups.length > 0 && (
+                        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 mb-2 px-2">Non groupées</p>
+                      )}
+                      {ungroupedLayers.map(layer => renderLayerItem(layer))}
                     </div>
                   )}
-                </div>
-              ))}
+
+                  {groups.length === 0 && ungroupedLayers.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-[11px] text-white/40">Aucune couche disponible</p>
+                      <p className="text-[10px] text-white/25 mt-1">Synchronisez depuis l'admin</p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Opacity slider */}
             {activeLayerId && (
               <div className="px-5 py-3 border-t border-white/10 bg-white/5">
                 <div className="flex items-center gap-3">
-                  <span className="text-[9px] text-white/40 font-semibold uppercase tracking-widest">
-                    Opacity
-                  </span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={layerOpacity}
-                    onChange={(e) => changeOpacity(parseFloat(e.target.value))}
-                    className="flex-1 h-1 appearance-none bg-white/10 rounded-full cursor-pointer
-                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-umbrella-accent [&::-webkit-slider-thumb]:shadow-sm
-                      [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-umbrella-accent [&::-moz-range-thumb]:border-0"
-                  />
-                  <span className="text-[10px] text-white/50 font-mono w-8 text-right">
-                    {Math.round(layerOpacity * 100)}%
-                  </span>
+                  <span className="text-[9px] text-white/40 font-semibold uppercase tracking-widest">Opacité</span>
+                  <input type="range" min={0} max={1} step={0.05} value={layerOpacity} onChange={e => changeOpacity(parseFloat(e.target.value))} className="flex-1 h-1 appearance-none bg-white/10 rounded-full cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-umbrella-accent [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-umbrella-accent [&::-moz-range-thumb]:border-0" />
+                  <span className="text-[10px] text-white/50 font-mono w-8 text-right">{Math.round(layerOpacity * 100)}%</span>
                 </div>
               </div>
             )}
@@ -441,7 +544,7 @@ export default function Geoportail() {
             <div className="px-5 py-3 border-t border-white/10">
               <p className="text-[9px] text-white/25 leading-relaxed">
                 Data © OSS — Observatoire du Sahara et du Sahel<br />
-                LDN Tunisia Project — GEF/UNEP Funding
+                Projet LDN Tunisie — Financement FEM/PNUE
               </p>
             </div>
           </div>
