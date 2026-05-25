@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: umbrella
+  namespace: umb-tun
 spec:
   replicas: 1
   selector:
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: mehdino123/umb-front:latest
+          image: mehdino123/umb-front:latest3
           ports:
             - containerPort: 80
           resources:
@@ -39,7 +39,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend
-  namespace: umbrella
+  namespace: umb-tun
 spec:
   selector:
     app: frontend
