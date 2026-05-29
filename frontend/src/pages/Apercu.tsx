@@ -80,12 +80,11 @@ export default function Apercu() {
         </div>
       </section>
 
-      {/* ── Image Placeholder ── */}
       <section className="py-20 md:py-16">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <Reveal>
-            <div className="w-full h-[300px] md:h-[500px] bg-black/5 border border-black/10 flex items-center justify-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-black/30">Image placeholder</p>
+            <div className="w-full">
+              <img src="/images/geoportal_image_1.png" alt="Géoportail Umbrella" className="w-full h-auto rounded-lg" />
             </div>
           </Reveal>
         </div>

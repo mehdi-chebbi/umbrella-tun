@@ -299,12 +299,11 @@ export default function NDTTunisie() {
         </div>
       </section>
 
-      {/* ── Image Placeholder ── */}
       <section className="py-20 md:py-16">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <Reveal>
-            <div className="w-full h-[300px] md:h-[450px] bg-black/5 border border-black/10 flex items-center justify-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-black/30">Image placeholder</p>
+            <div className="w-full">
+              <img src="/images/ldn_image_2.png" alt="NDT en Tunisie" className="w-full h-auto rounded-lg" />
             </div>
           </Reveal>
         </div>
@@ -371,8 +370,8 @@ export default function NDTTunisie() {
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <Reveal>
             <h2 className="font-serif text-3xl md:text-4xl tracking-tight mb-8">Carte de situation des hotspots du Projet Umbrella en Tunisie</h2>
-            <div className="w-full h-[300px] md:h-[500px] bg-black/5 border border-black/10 flex items-center justify-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-black/30">Image placeholder</p>
+            <div className="w-full max-w-3xl mx-auto">
+              <img src="/images/hotspots_carte.png" alt="Carte de situation des hotspots du Projet Umbrella en Tunisie" className="w-full h-auto rounded-lg" />
             </div>
           </Reveal>
         </div>
@@ -592,12 +591,11 @@ export default function NDTTunisie() {
         </div>
       </section>
 
-      {/* ── Final Image Placeholder ── */}
       <section className="py-20 md:py-16">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <Reveal>
-            <div className="w-full h-[300px] md:h-[450px] bg-black/5 border border-black/10 flex items-center justify-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-black/30">Image placeholder</p>
+            <div className="w-full">
+              <img src="/images/ldn_image_1.png" alt="Engagements et actions NDT" className="w-full h-auto rounded-lg" />
             </div>
           </Reveal>
         </div>
