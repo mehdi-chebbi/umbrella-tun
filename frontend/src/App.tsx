@@ -1,9 +1,13 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import Home from './pages/Home';
-import About from './pages/About';
-import Partners from './pages/Partners';
+import NDTTunisie from './pages/NDTTunisie';
 import Geoportail from './pages/Geoportail';
+import TableauDeBord from './pages/TableauDeBord';
+import SuccessStories from './pages/SuccessStories';
+import Resources from './pages/Resources';
+import Apercu from './pages/Apercu';
+import TableauDeBordNDT from './pages/TableauDeBordNDT';
 import AdminLogin from './pages/admin/Login';
 import AdminLayout from './pages/admin/Layout';
 import AdminDashboard from './pages/admin/Dashboard';
@@ -27,9 +31,13 @@ function App() {
     <ScrollToTop />
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/a-propos" element={<About />} />
-      <Route path="/partenaires" element={<Partners />} />
+      <Route path="/ndt-en-tunisie" element={<NDTTunisie />} />
       <Route path="/geoportail" element={<Geoportail />} />
+      <Route path="/apercu" element={<Apercu />} />
+      <Route path="/tableau-de-bord" element={<TableauDeBord />} />
+      <Route path="/tableau-de-bord-ndt" element={<TableauDeBordNDT />} />
+      <Route path="/acquis-et-success-stories" element={<SuccessStories />} />
+      <Route path="/ressources" element={<Resources />} />
       <Route path="/admin/connexion" element={<AdminLogin />} />
       <Route
         path="/admin"
