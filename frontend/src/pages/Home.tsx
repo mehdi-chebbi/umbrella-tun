@@ -398,8 +398,8 @@ export default function Home() {
                   </a>
                 </p>
               </div>
-              <div className="mt-10 w-full h-[300px] md:h-[450px] bg-black/5 border border-black/10 flex items-center justify-center">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-black/30">Image placeholder</p>
+              <div className="mt-10 w-full">
+                <img src="/images/Home_Image_1.png" alt="Dégradation des terres en Tunisie" className="w-full h-auto rounded-lg" />
               </div>
             </div>
           </Reveal>
@@ -648,9 +648,8 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Image placeholder */}
-              <div className="mt-10 w-full h-[300px] md:h-[450px] bg-black/5 border border-black/10 flex items-center justify-center">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-black/30">Image placeholder</p>
+              <div className="mt-10 w-full">
+                <img src="/images/Home_Image_2.png" alt="Projets et partenaires" className="w-full h-auto rounded-lg" />
               </div>
             </div>
           </Reveal>

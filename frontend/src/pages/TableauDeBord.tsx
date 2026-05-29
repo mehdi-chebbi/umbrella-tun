@@ -195,9 +195,8 @@ export default function TableauDeBord() {
                 </p>
               </div>
 
-              {/* Image placeholder */}
-              <div className="mt-10 w-full h-[250px] md:h-[400px] bg-black/5 border border-black/10 flex items-center justify-center">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-black/30">Image placeholder</p>
+              <div className="mt-10 w-full">
+                <img src="/images/tableau_bord_image_1.png" alt="Tableau de bord NDT" className="w-full h-auto rounded-lg" />
               </div>
             </div>
           </Reveal>

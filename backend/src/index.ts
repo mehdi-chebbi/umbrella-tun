@@ -13,6 +13,7 @@ import chatRoutes from './routes/chat.js';
 import layerRoutes from './routes/layers.js';
 import groupRoutes from './routes/groups.js';
 import clipRoutes from './routes/clip.js';
+import resourceRoutes from './routes/resources.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -43,6 +44,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/layers', layerRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/clip', clipRoutes);
+app.use('/api/resources', resourceRoutes);
 
 // ─── Health Check ───────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
