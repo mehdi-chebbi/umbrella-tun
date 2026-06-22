@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: umbrella-config
+  namespace: umb-tun
+data:
+  # ── Backend Environment ──
+  DB_HOST: "db"
+  DB_PORT: "5432"
+  DB_NAME: "umbrella"
+  DB_USER: "umbrella_user"
+  DB_PASSWORD: "umbrella_pass"
+  JWT_SECRET: "umbrella-jwt-secret-change-in-production"
+  JWT_EXPIRES_IN: "24h"
+  PORT: "4000"
+  # FRONTEND_URL intentionally omitted — Nginx proxies /api/ same-origin,
+  # so CORS is not needed. The backend falls back to permissive cors().
+
+  # ── Database ──
+  POSTGRES_DB: "umbrella"
+  POSTGRES_USER: "umbrella_user"
+  POSTGRES_PASSWORD: "umbrella_pass"
