@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronDown, ChevronRight, Map, Satellite, PenTool, X, BarChart3, Loader2, Globe2, Download, FileDown, Image as ImageIcon, Flag, Send, CheckCircle2, Layers } from 'lucide-react';
+import { ChevronDown, ChevronRight, Map, Satellite, PenTool, X, BarChart3, Loader2, Globe2, Download, FileDown, Image as ImageIcon, Flag, Send, CheckCircle2, Layers, Sparkles } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -7,6 +7,7 @@ import 'leaflet-draw';
 import 'leaflet-side-by-side';
 import leafletImage from 'leaflet-image';
 import Navbar from '@/components/Navbar';
+import ChatAgent from '@/components/ChatAgent';
 import api from '@/services/api';
 
 /* ─── Types ─── */
@@ -204,6 +205,7 @@ export default function Geoportail() {
   const compareControlRef = useRef<L.Control.SideBySide | null>(null);
   const statsRequestIdRef = useRef(0);
   const drawModeRef = useRef<DrawMode>(null);
+  const deepLinkHandledRef = useRef(false);
 
   const [baseMap, setBaseMap] = useState<BaseMap>('satellite');
   const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
@@ -218,6 +220,7 @@ export default function Geoportail() {
   const [statsResult, setStatsResult] = useState<StatsResult | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState('');
+  const [aiAnalysisRequest, setAiAnalysisRequest] = useState<{ id: number; prompt: string } | null>(null);
 
   // Anonymous incorrect-data reporting
   const [reportMode, setReportMode] = useState(false);
@@ -615,6 +618,19 @@ export default function Geoportail() {
     setActiveLayerId(layer.id);
   }, [layerOpacity, cancelDrawing, clearGovernorateBoundary, isCompareMode, exitCompare]);
 
+  // Assistant chart links can open the matching layer and governorate directly.
+  useEffect(() => {
+    if (layersLoading || deepLinkHandledRef.current) return;
+    deepLinkHandledRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const layerId = Number(params.get('layer'));
+    if (!Number.isInteger(layerId)) return;
+    const layer = [...ungroupedLayers, ...getAllLayers(groups)].find(candidate => candidate.id === layerId);
+    if (!layer) return;
+    selectedGovernorateRef.current = params.get('governorate') || null;
+    selectLayer(layer);
+  }, [groups, layersLoading, selectLayer, ungroupedLayers]);
+
   /* Fetch clipped layers for the active source layer */
   useEffect(() => {
     if (!activeLayerId) {
@@ -716,19 +732,17 @@ export default function Geoportail() {
     setStatsResult(null);
     setStatsError('');
 
-    // Automatically calculate statistics for the complete governorate.
-    if (clipName && layer.hasStats) {
+    // Complete-governorate statistics are precomputed by administrators.
+    // Only arbitrary polygons use the live raster calculation endpoint.
+    if (clipName && layer.hasStats && selectedGovernorateClip?.country) {
       setStatsLoading(true);
-      api.post('/clip/stats', {
-        layer_name: layer.geoserver_name,
-        clippedLayerName: clipName,
-      })
+      api.get(`/statistics/layer/${layer.id}/governorate/${encodeURIComponent(selectedGovernorateClip.country)}`)
         .then(response => {
           if (statsRequestId === statsRequestIdRef.current) setStatsResult(response.data);
         })
         .catch((err: any) => {
           if (statsRequestId === statsRequestIdRef.current) {
-            setStatsError(err.response?.data?.error || 'Erreur lors du calcul des statistiques');
+            setStatsError(err.response?.data?.error || 'Statistiques pré-calculées indisponibles');
           }
         })
         .finally(() => {
@@ -1214,11 +1228,6 @@ export default function Geoportail() {
                   <span className="text-umbrella-text-secondary">Surface totale</span>
                   <span className="font-semibold text-umbrella-text">{statsResult.total_area_km2.toFixed(1)} km²</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-umbrella-text-secondary">Résolution pixel</span>
-                  <span className="font-semibold text-umbrella-text">{statsResult.pixel_size_m} m</span>
-                </div>
-
                 {/* Class breakdown */}
                 <div className="space-y-2 pt-2 border-t border-umbrella-border">
                   {statsResult.classes
@@ -1236,10 +1245,34 @@ export default function Geoportail() {
                       </div>
                     ))}
                 </div>
+                {selectedClip && activeLayer && (() => {
+                  const governorate = clips.find(clip => clip.clippedLayerName === selectedClip)?.country;
+                  if (!governorate) return null;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setAiAnalysisRequest({
+                        id: Date.now(),
+                        prompt: `Analyse les résultats de la couche « ${activeLayer.name} » pour le gouvernorat de ${governorate}.`,
+                      })}
+                      className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-umbrella-accent px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-umbrella-accent/90 active:scale-[0.98]"
+                    >
+                      <Sparkles size={15} strokeWidth={1.5} />
+                      Analyser avec l’IA
+                    </button>
+                  );
+                })()}
               </div>
             )}
           </div>
         )}
+
+        {/* On the map, the assistant sits in the right-side analysis rail. */}
+        <ChatAgent
+          placement="geoportal"
+          geoportalHasStats={Boolean(statsLoading || statsResult || statsError)}
+          analysisRequest={aiAnalysisRequest}
+        />
 
         {/* Anonymous report comment form */}
         {reportMode && reportGeometry && !isCompareMode && (

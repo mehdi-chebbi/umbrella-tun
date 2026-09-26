@@ -15,6 +15,7 @@ import groupRoutes from './routes/groups.js';
 import clipRoutes from './routes/clip.js';
 import resourceRoutes from './routes/resources.js';
 import reportRoutes from './routes/reports.js';
+import statisticsRoutes from './routes/statistics.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -47,6 +48,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/clip', clipRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/statistics', statisticsRoutes);
 
 // ─── Static file serving for clipped rasters (TIFF downloads) ───────────
 // Clip-service writes .tif files to CLIP_OUTPUT_DIR (default /data/clipped-rasters).

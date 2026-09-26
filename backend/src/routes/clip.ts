@@ -1069,6 +1069,10 @@ router.delete('/clipped-layer', authMiddleware, adminOnly, async (req: Request, 
       'DELETE FROM clipped_layers_cache WHERE country_file = $1 AND layer_id = $2',
       [countryFile, layerId]
     );
+    await query(
+      'DELETE FROM layer_governorate_stats WHERE country_file = $1 AND layer_id = $2',
+      [countryFile, layerId]
+    );
 
     // Try to delete physical file (non-critical)
     try {
@@ -1152,6 +1156,7 @@ router.delete('/batch-delete', authMiddleware, adminOnly, async (req: Request, r
 
     // Always clean DB
     await query('DELETE FROM clipped_layers_cache WHERE layer_id = $1', [layerId]);
+    await query('DELETE FROM layer_governorate_stats WHERE layer_id = $1', [layerId]);
 
     // Try to delete physical files (non-critical)
     try {

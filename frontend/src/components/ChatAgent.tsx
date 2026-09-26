@@ -1,24 +1,79 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react';
-import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, ExternalLink } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 /* ─── Types ─── */
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  visualizations?: Visualization[];
+  progress?: string;
+}
+
+interface Visualization {
+  type: 'donut' | 'bars';
+  title: string;
+  data: Array<Record<string, string | number>>;
+  map_url?: string;
+}
+
+const CHART_COLORS = ['#9b145a', '#e65a78', '#ffbe78', '#d8d8a8', '#006400', '#2878b5', '#7a5aa6', '#94734a'];
+
+function DataVisualization({ visualization }: { visualization: Visualization }) {
+  const keys = visualization.type === 'bars' && visualization.data[0]
+    ? Object.keys(visualization.data[0]).filter(key => key !== 'governorate')
+    : [];
+  return (
+    <div className="mt-3 overflow-hidden rounded-xl border border-umbrella-border bg-white p-3 not-prose">
+      <p className="mb-2 text-xs font-semibold text-umbrella-text">{visualization.title}</p>
+      <div className="h-52 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          {visualization.type === 'donut' ? (
+            <PieChart>
+              <Pie data={visualization.data} dataKey="value" nameKey="name" innerRadius={42} outerRadius={70} paddingAngle={1}>
+                {visualization.data.map((_, index) => <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+              </Pie>
+              <Tooltip formatter={(value) => `${Number(value).toFixed(1)} %`} />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+            </PieChart>
+          ) : (
+            <BarChart data={visualization.data} margin={{ top: 5, right: 5, left: -22, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="governorate" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} unit="%" />
+              <Tooltip formatter={(value) => `${Number(value).toFixed(1)} %`} />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+              {keys.map((key, index) => <Bar key={key} dataKey={key} fill={CHART_COLORS[index % CHART_COLORS.length]} radius={[2, 2, 0, 0]} />)}
+            </BarChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+      {visualization.map_url && <a href={visualization.map_url} className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-umbrella-accent hover:underline">Voir sur la carte <ExternalLink size={12} /></a>}
+    </div>
+  );
 }
 
 /* ─── Component ─── */
 
-export default function ChatAgent() {
+interface ChatAgentProps {
+  placement?: 'default' | 'geoportal';
+  geoportalHasStats?: boolean;
+  analysisRequest?: { id: number; prompt: string } | null;
+}
+
+export default function ChatAgent({ placement = 'default', geoportalHasStats = false, analysisRequest = null }: ChatAgentProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [conversationSummary, setConversationSummary] = useState('');
+  const [summarizedCount, setSummarizedCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const handledAnalysisRequestRef = useRef<number | null>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -37,9 +92,8 @@ export default function ChatAgent() {
     return () => abortRef.current?.abort();
   }, []);
 
-  const handleSubmit = async (e?: FormEvent) => {
-    e?.preventDefault();
-    const trimmed = input.trim();
+  const sendMessage = async (message: string) => {
+    const trimmed = message.trim();
     if (!trimmed || isStreaming) return;
 
     // Add user message
@@ -62,10 +116,11 @@ export default function ChatAgent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: updatedMessages.map((m) => ({
+          messages: updatedMessages.slice(summarizedCount).map((m) => ({
             role: m.role,
             content: m.content,
           })),
+          summary: conversationSummary,
         }),
         signal: abortRef.current.signal,
       });
@@ -112,10 +167,41 @@ export default function ChatAgent() {
                 const copy = [...prev];
                 copy[copy.length - 1] = {
                   ...copy[copy.length - 1],
+                  progress: undefined,
                   content: copy[copy.length - 1].content + parsed.content,
                 };
                 return copy;
               });
+            }
+            if (parsed.type === 'progress' && typeof parsed.message === 'string') {
+              setMessages((prev) => {
+                const copy = [...prev];
+                const last = copy[copy.length - 1];
+                copy[copy.length - 1] = { ...last, progress: parsed.message };
+                return copy;
+              });
+            }
+            if (parsed.type === 'visualization' && parsed.visualization) {
+              setMessages((prev) => {
+                const copy = [...prev];
+                const last = copy[copy.length - 1];
+                copy[copy.length - 1] = { ...last, visualizations: [...(last.visualizations || []), parsed.visualization] };
+                return copy;
+              });
+            }
+            if (parsed.type === 'error' && parsed.error) {
+              setMessages((prev) => {
+                const copy = [...prev];
+                const last = copy[copy.length - 1];
+                copy[copy.length - 1] = { ...last, content: `⚠️ ${parsed.error}` };
+                return copy;
+              });
+            }
+            if (parsed.type === 'context' && typeof parsed.summary === 'string') {
+              setConversationSummary(parsed.summary);
+              if (Number.isInteger(parsed.consumed) && parsed.consumed > 0) {
+                setSummarizedCount(count => count + parsed.consumed);
+              }
             }
           } catch {
             // Skip malformed JSON
@@ -140,6 +226,24 @@ export default function ChatAgent() {
     }
   };
 
+  const handleSubmit = async (e?: FormEvent) => {
+    e?.preventDefault();
+    await sendMessage(input);
+  };
+
+  useEffect(() => {
+    if (!analysisRequest || handledAnalysisRequestRef.current === analysisRequest.id) return;
+    setIsOpen(true);
+    if (isStreaming) {
+      setInput(analysisRequest.prompt);
+      return;
+    }
+    handledAnalysisRequestRef.current = analysisRequest.id;
+    void sendMessage(analysisRequest.prompt);
+    // sendMessage deliberately uses the latest chat state when this request changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analysisRequest, isStreaming]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -162,7 +266,11 @@ export default function ChatAgent() {
       {!isOpen && (
         <button
           onClick={handleOpen}
-          className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-umbrella-accent text-white shadow-lg hover:shadow-xl hover:bg-umbrella-accent/90 transition-all duration-300 flex items-center justify-center group"
+          className={`fixed flex h-14 w-14 items-center justify-center rounded-full bg-umbrella-accent text-white shadow-lg transition-all duration-300 hover:bg-umbrella-accent/90 hover:shadow-xl active:scale-[0.98] group ${
+            placement === 'geoportal'
+              ? `right-3 top-[46%] z-[1200] -translate-y-1/2 lg:right-4 lg:translate-y-0 ${geoportalHasStats ? 'lg:top-[29rem]' : 'lg:top-1/2'}`
+              : 'bottom-6 right-6 z-[9999]'
+          }`}
           aria-label="Open AI Assistant"
         >
           <MessageCircle size={24} strokeWidth={1.5} className="group-hover:scale-110 transition-transform duration-200" />
@@ -173,7 +281,9 @@ export default function ChatAgent() {
 
       {/* ── Chat Panel ── */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-[9999] w-[380px] max-w-[calc(100vw-3rem)] h-[550px] max-h-[calc(100vh-6rem)] bg-white rounded-2xl shadow-2xl border border-umbrella-border flex flex-col overflow-hidden animate-slide-up">
+        <div className={`fixed flex h-[550px] max-h-[calc(100dvh-6rem)] w-[380px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-umbrella-border bg-white shadow-2xl animate-slide-up ${
+          placement === 'geoportal' ? 'bottom-3 right-3 z-[2200] sm:bottom-4 sm:right-4' : 'bottom-6 right-6 z-[9999] max-w-[calc(100vw-3rem)]'
+        }`}>
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 bg-umbrella-accent text-white">
             <div className="flex items-center gap-2.5">
@@ -232,9 +342,19 @@ export default function ChatAgent() {
                     ) : (
                       msg.content
                     )
+                  ) : msg.progress ? (
+                    <div className="flex items-center gap-2.5 text-xs text-umbrella-text-secondary">
+                      <span className="flex items-center gap-1" aria-hidden="true">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-umbrella-accent" />
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-umbrella-accent [animation-delay:150ms]" />
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-umbrella-accent [animation-delay:300ms]" />
+                      </span>
+                      <span>{msg.progress}</span>
+                    </div>
                   ) : (
-                    <Loader2 size={14} className="animate-spin text-umbrella-text-light" />
+                    <span className="text-xs text-umbrella-text-light">Connexion à l’assistant…</span>
                   )}
+                  {msg.visualizations?.map((visualization, index) => <DataVisualization key={`${visualization.title}-${index}`} visualization={visualization} />)}
                 </div>
                 {msg.role === 'user' && (
                   <div className="w-7 h-7 rounded-full bg-umbrella-warm-light flex items-center justify-center shrink-0 mt-0.5">

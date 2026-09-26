@@ -17,6 +17,7 @@ import AdminClips from './pages/admin/Clips';
 import AdminReports from './pages/admin/Reports';
 import AdminReportMap from './pages/admin/ReportMap';
 import AdminDocuments from './pages/admin/Documents';
+import AdminStatistics from './pages/admin/Statistics';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatAgent from './components/ChatAgent';
 
@@ -65,6 +66,7 @@ function App() {
         <Route path="utilisateurs" element={<AdminUsers />} />
         <Route path="couches" element={<AdminLayers />} />
         <Route path="decoupages" element={<AdminClips />} />
+        <Route path="statistiques" element={<AdminStatistics />} />
         <Route path="signalements" element={<AdminReports />} />
         <Route path="documents" element={<AdminDocuments />} />
       </Route>
