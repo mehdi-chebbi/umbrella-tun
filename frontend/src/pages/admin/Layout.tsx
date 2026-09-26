@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { LayoutDashboard, Users, LogOut, Menu, X, ChevronRight, Layers, Scissors } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Menu, X, Layers, Scissors, Flag, FileText } from 'lucide-react';
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
@@ -68,6 +68,18 @@ export default function AdminLayout() {
             <Scissors size={18} strokeWidth={1.5} />
             <span>Découpages</span>
           </NavLink>
+          {user?.role === 'admin' && (
+            <>
+              <NavLink to="/admin/signalements" className={navLinkClass} onClick={() => setSidebarOpen(false)}>
+                <Flag size={18} strokeWidth={1.5} />
+                <span>Signalements</span>
+              </NavLink>
+              <NavLink to="/admin/documents" className={navLinkClass} onClick={() => setSidebarOpen(false)}>
+                <FileText size={18} strokeWidth={1.5} />
+                <span>Documents</span>
+              </NavLink>
+            </>
+          )}
         </nav>
 
         {/* User Info & Logout */}

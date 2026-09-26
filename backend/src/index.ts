@@ -14,6 +14,7 @@ import layerRoutes from './routes/layers.js';
 import groupRoutes from './routes/groups.js';
 import clipRoutes from './routes/clip.js';
 import resourceRoutes from './routes/resources.js';
+import reportRoutes from './routes/reports.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,6 +46,7 @@ app.use('/api/layers', layerRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/clip', clipRoutes);
 app.use('/api/resources', resourceRoutes);
+app.use('/api/reports', reportRoutes);
 
 // ─── Static file serving for clipped rasters (TIFF downloads) ───────────
 // Clip-service writes .tif files to CLIP_OUTPUT_DIR (default /data/clipped-rasters).
@@ -77,8 +79,12 @@ app.use((_req, res) => {
 });
 
 // ─── Global Error Handler ───────────────────────────────────────────────
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((err: Error & { status?: number; statusCode?: number; type?: string }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Erreur non gérée :', err);
+  if (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413) {
+    res.status(413).json({ error: 'Le fichier dépasse la limite de 25 Mo' });
+    return;
+  }
   res.status(500).json({ error: 'Erreur interne du serveur' });
 });
 

@@ -84,7 +84,7 @@ export default function Apercu() {
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <Reveal>
             <div className="w-full">
-              <img src="/images/geoportal_image_1.png" alt="Géoportail Umbrella" className="w-full h-auto rounded-lg" />
+              <img src="/images/geoportal_image_1.webp" alt="Géoportail Umbrella" className="w-full h-auto rounded-lg" />
             </div>
           </Reveal>
         </div>

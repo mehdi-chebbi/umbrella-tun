@@ -63,13 +63,13 @@ export default function Navbar({ darkOnInit = false }: NavbarProps) {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed top-0 left-0 right-0 z-[3000] transition-all duration-500 ${
         isDark
           ? 'bg-white/95 backdrop-blur-md border-b border-black/5 nav-scrolled'
           : 'bg-transparent nav-top'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="w-full px-6 lg:px-10 xl:px-12 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link
           to="/"

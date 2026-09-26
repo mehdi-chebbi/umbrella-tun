@@ -1,0 +1,89 @@
+# ─── Deployment ─────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clip-service
+  namespace: umb-tun
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: clip-service
+  template:
+    metadata:
+      labels:
+        app: clip-service
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: geoserver
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nc -z db 5432; do echo waiting for db; sleep 2; done;
+        - name: wait-for-geoserver
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nc -z geoserver 8080; do echo waiting for geoserver; sleep 5; done;
+      containers:
+        - name: clip-service
+          image: mehdino123/umb-tun-clip:latest8
+          ports:
+            - containerPort: 3005
+          envFrom:
+            - configMapRef:
+                name: umbrella-config
+          volumeMounts:
+            - name: clipped-rasters
+              mountPath: /data/clipped-rasters
+            - name: geoserver-data
+              mountPath: /opt/geoserver/data_dir
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: clipped-rasters
+          persistentVolumeClaim:
+            claimName: clipped-rasters-pvc
+        - name: geoserver-data
+          persistentVolumeClaim:
+            claimName: geoserver-data-pvc
+
+---
+# ─── Service ────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: clip-service
+  namespace: umb-tun
+spec:
+  selector:
+    app: clip-service
+  ports:
+    - port: 3005
+      targetPort: 3005

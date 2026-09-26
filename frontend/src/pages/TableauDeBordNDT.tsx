@@ -106,10 +106,10 @@ function getDegraded(d: DegradationSummary) {
 /* ─── KPI Card ─── */
 function KPICard({ label, superficie, pourcentage, color }: { label: string; superficie: number; pourcentage: number; color: string }) {
   return (
-    <div className="border-t-4 bg-white shadow-lg p-6 md:p-8 text-center" style={{ borderTopColor: color }}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-black/40 mb-2">{label}</p>
-      <p className="font-serif text-3xl md:text-4xl tracking-tight mb-1" style={{ color }}>{pourcentage.toFixed(2)}%</p>
-      <p className="text-sm font-light text-black/50">{fmt(superficie)} km²</p>
+    <div className="border-t-4 bg-white p-4 text-center shadow-lg sm:p-6 md:p-8" style={{ borderTopColor: color }}>
+      <p className="mb-2 min-h-7 text-[9px] font-semibold uppercase leading-tight tracking-[0.12em] text-black/40 sm:min-h-0 sm:text-[10px] sm:tracking-[0.15em]">{label}</p>
+      <p className="mb-1 font-serif text-2xl tracking-tight sm:text-3xl md:text-4xl" style={{ color }}>{pourcentage.toFixed(2)}%</p>
+      <p className="text-xs font-light text-black/50 sm:text-sm">{fmt(superficie)} km²</p>
     </div>
   );
 }
@@ -117,7 +117,7 @@ function KPICard({ label, superficie, pourcentage, color }: { label: string; sup
 /* ─── Remarque box ─── */
 function Remarque({ text }: { text: string }) {
   return (
-    <div className="bg-black text-white p-6 md:p-8 relative overflow-hidden">
+    <div className="relative overflow-hidden bg-black p-5 text-white sm:p-6 md:p-8">
       <div className="absolute top-4 left-4 w-6 h-6 border-t border-l border-white/15 pointer-events-none" />
       <div className="absolute bottom-4 right-4 w-6 h-6 border-b border-r border-white/15 pointer-events-none" />
       <div className="flex items-start gap-3">
@@ -168,8 +168,9 @@ function TransitionHeatmap({ data, title }: { data: TransitionData; title: strin
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto overscroll-x-contain pb-2">
       <h3 className="font-serif text-xl md:text-2xl tracking-tight mb-6">{title}</h3>
+      <p className="mb-3 text-[10px] text-black/40 md:hidden">Faites glisser horizontalement pour voir toutes les valeurs.</p>
       <table className="w-full text-[11px] md:text-xs border-collapse min-w-[600px]">
         <thead>
           <tr>
@@ -234,8 +235,9 @@ function CouvertureChangeTable({ data, periodLabels }: { data: typeof changement
   const supKey2 = periodLabels[1] === '2015' ? 'superficie2015' : 'superficie2019';
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
+    <div className="overflow-x-auto overscroll-x-contain pb-2">
+      <p className="mb-3 text-[10px] text-black/40 md:hidden">Faites glisser horizontalement pour voir toutes les colonnes.</p>
+      <table className="w-full min-w-[680px] border-collapse text-sm">
         <thead>
           <tr className="bg-black text-white">
             <th className="text-left p-4 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/60">Catégorie</th>
@@ -286,7 +288,8 @@ function SOCChangeTable({ data, total, periodLabels }: { data: typeof changement
   const totalSoc2 = t[`socTotal${y2}`];
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto overscroll-x-contain pb-2">
+      <p className="mb-3 text-[10px] text-black/40 md:hidden">Faites glisser horizontalement pour voir toutes les colonnes.</p>
       <table className="w-full text-xs md:text-sm border-collapse min-w-[700px]">
         <thead>
           <tr className="bg-black text-white">
@@ -363,7 +366,7 @@ function CouvertureTab({ period }: { period: Period }) {
   };
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8 md:space-y-12">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KPICard label="Améliorée" superficie={degradation.amelioree.superficie} pourcentage={degradation.amelioree.pourcentage} color={PIE_COLORS.amelioree} />
@@ -373,12 +376,12 @@ function CouvertureTab({ period }: { period: Period }) {
 
       {/* Pie + Change Table */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <div className="lg:col-span-2 border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+        <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8 lg:col-span-2">
           <h3 className="font-serif text-xl tracking-tight mb-6">Répartition de la couverture</h3>
-          <div className="h-[280px]">
+          <div className="h-[250px] sm:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={50} strokeWidth={2} stroke="#fff">
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="78%" innerRadius="42%" strokeWidth={2} stroke="#fff">
                   {pieData.map((entry, i) => (
                     <Cell key={i} fill={entry.fill} />
                   ))}
@@ -387,7 +390,7 @@ function CouvertureTab({ period }: { period: Period }) {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex justify-center gap-6 mt-4">
+          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 sm:gap-6">
             {pieData.map((d) => (
               <div key={d.name} className="flex items-center gap-2 text-[11px] text-black/60">
                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: d.fill }} />
@@ -397,7 +400,7 @@ function CouvertureTab({ period }: { period: Period }) {
           </div>
         </div>
 
-        <div className="lg:col-span-3 border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+        <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8 lg:col-span-3">
           <h3 className="font-serif text-xl tracking-tight mb-6">Changement dans l&apos;occupation du sol ({periodLabels[0]} → {periodLabels[1]})</h3>
           <CouvertureChangeTable data={changement} periodLabels={periodLabels} />
         </div>
@@ -407,34 +410,37 @@ function CouvertureTab({ period }: { period: Period }) {
       {degradation.remarque && <Remarque text={degradation.remarque} />}
 
       {/* Line chart */}
-      <div className="border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+      <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8">
         <h3 className="font-serif text-xl md:text-2xl tracking-tight mb-6">Évolution annuelle de la couverture terrestre (km²)</h3>
-        <div className="h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={couvertureAnnuelle} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
-              <XAxis dataKey="annee" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(value: unknown) => fmt(Number(value))} labelFormatter={(l) => `Année ${l}`} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              {lineKeys.map((key) => (
-                <Line
-                  key={key}
-                  type="monotone"
-                  dataKey={key}
-                  stroke={lineColors[key] || '#666'}
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+        <p className="mb-3 text-[10px] text-black/40 md:hidden">Faites glisser le graphique horizontalement pour lire toutes les séries.</p>
+        <div className="overflow-x-auto overscroll-x-contain pb-2">
+          <div className="h-[310px] min-w-[680px] md:h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={couvertureAnnuelle} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+                <XAxis dataKey="annee" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(value: unknown) => fmt(Number(value))} labelFormatter={(l) => `Année ${l}`} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                {lineKeys.map((key) => (
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    stroke={lineColors[key] || '#666'}
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* Transition heatmap */}
-      <div className="border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+      <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8">
         <TransitionHeatmap
           data={transition}
           title={`Matrice de transition (${periodLabels[0]} → ${periodLabels[1]})`}
@@ -461,9 +467,9 @@ function ProductiviteTab({ period }: { period: Period }) {
   ];
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8 md:space-y-12">
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 min-[390px]:grid-cols-2 md:grid-cols-4">
         <KPICard label="Améliorée" superficie={degradation.amelioree.superficie} pourcentage={degradation.amelioree.pourcentage} color={PIE_COLORS.amelioree} />
         <KPICard label="Stable" superficie={degradation.stable.superficie} pourcentage={degradation.stable.pourcentage} color={PIE_COLORS.stable} />
         <KPICard label="Dégradée" superficie={degradation.degradee.superficie} pourcentage={degradation.degradee.pourcentage} color={PIE_COLORS.degradee} />
@@ -471,12 +477,12 @@ function ProductiviteTab({ period }: { period: Period }) {
       </div>
 
       {/* Pie */}
-      <div className="border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+      <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8">
         <h3 className="font-serif text-xl tracking-tight mb-6">Répartition de la productivité des terres ({period})</h3>
-        <div className="h-[300px]">
+        <div className="h-[260px] sm:h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} innerRadius={55} strokeWidth={2} stroke="#fff">
+              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="78%" innerRadius="42%" strokeWidth={2} stroke="#fff">
                 {pieData.map((entry, i) => (
                   <Cell key={i} fill={entry.fill} />
                 ))}
@@ -485,7 +491,7 @@ function ProductiviteTab({ period }: { period: Period }) {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex justify-center gap-6 mt-4">
+        <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 sm:gap-6">
           {pieData.map((d) => (
             <div key={d.name} className="flex items-center gap-2 text-[11px] text-black/60">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: d.fill }} />
@@ -498,7 +504,7 @@ function ProductiviteTab({ period }: { period: Period }) {
       {degradation.remarque && <Remarque text={degradation.remarque} />}
 
       {/* Augmentée transition */}
-      <div className="border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+      <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8">
         <TransitionHeatmap
           data={augmentee}
           title={`Surface des terres dont la productivité a augmenté (${period})`}
@@ -508,7 +514,7 @@ function ProductiviteTab({ period }: { period: Period }) {
       {augmentee.remarque && <Remarque text={augmentee.remarque} />}
 
       {/* Diminuée transition */}
-      <div className="border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+      <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8">
         <TransitionHeatmap
           data={diminuee}
           title={`Surface des terres dont la productivité a diminué (${period})`}
@@ -539,11 +545,11 @@ function SOCTab({ period }: { period: Period }) {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8 md:space-y-12">
       {degradation.remarqueGenerale && <Remarque text={degradation.remarqueGenerale} />}
 
       {/* KPI Cards */}
-      <div className={degradation.absenceDonnees ? 'grid grid-cols-2 md:grid-cols-4 gap-4' : 'grid grid-cols-1 md:grid-cols-3 gap-4'}>
+      <div className={degradation.absenceDonnees ? 'grid grid-cols-1 gap-4 min-[390px]:grid-cols-2 md:grid-cols-4' : 'grid grid-cols-1 gap-4 md:grid-cols-3'}>
         <KPICard label="Amélioré" superficie={improved.superficie} pourcentage={improved.pourcentage} color={PIE_COLORS.amelioree} />
         <KPICard label="Stable" superficie={degradation.stable.superficie} pourcentage={degradation.stable.pourcentage} color={PIE_COLORS.stable} />
         <KPICard label="Dégradé" superficie={degraded.superficie} pourcentage={degraded.pourcentage} color={PIE_COLORS.degradee} />
@@ -553,12 +559,12 @@ function SOCTab({ period }: { period: Period }) {
       </div>
 
       {/* Pie */}
-      <div className="border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+      <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8">
         <h3 className="font-serif text-xl tracking-tight mb-6">Répartition du carbone organique du sol ({period})</h3>
-        <div className="h-[300px]">
+        <div className="h-[260px] sm:h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} innerRadius={55} strokeWidth={2} stroke="#fff">
+              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="78%" innerRadius="42%" strokeWidth={2} stroke="#fff">
                 {pieData.map((entry, i) => (
                   <Cell key={i} fill={entry.fill} />
                 ))}
@@ -567,7 +573,7 @@ function SOCTab({ period }: { period: Period }) {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex justify-center gap-6 mt-4">
+        <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 sm:gap-6">
           {pieData.map((d) => (
             <div key={d.name} className="flex items-center gap-2 text-[11px] text-black/60">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: d.fill }} />
@@ -580,13 +586,13 @@ function SOCTab({ period }: { period: Period }) {
       {degradation.remarque && <Remarque text={degradation.remarque} />}
 
       {/* SOC change table */}
-      <div className="border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+      <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8">
         <h3 className="font-serif text-xl md:text-2xl tracking-tight mb-6">Changement dans le carbone organique du sol ({periodLabels[0]} → {periodLabels[1]})</h3>
         <SOCChangeTable data={changement} total={total} periodLabels={periodLabels} />
       </div>
 
       {/* Couverture transition heatmap */}
-      <div className="border-t-4 border-t-black bg-white shadow-lg p-6 md:p-8">
+      <div className="border-t-4 border-t-black bg-white p-4 shadow-lg sm:p-6 md:p-8">
         <TransitionHeatmap
           data={couverture}
           title={`Changement dans le SOC selon le type de couverture (${periodLabels[0]} → ${periodLabels[1]}, tonnes/ha)`}
@@ -601,8 +607,8 @@ function PRAISTab() {
   const [openOS, setOpenOS] = useState<number | null>(null);
 
   return (
-    <div className="space-y-12">
-      <div className="border-t-4 border-t-black bg-white shadow-lg p-8 md:p-14">
+    <div className="space-y-8 md:space-y-12">
+      <div className="border-t-4 border-t-black bg-white p-5 shadow-lg sm:p-8 md:p-14">
         <p className="text-sm font-light leading-relaxed text-black/60">{espacePRAISIntro}</p>
       </div>
 
@@ -613,7 +619,7 @@ function PRAISTab() {
             <div key={os.numero} className={os.numero < objectifsStrategiques.length ? 'border-b border-black/10' : ''}>
               <button
                 onClick={() => setOpenOS(isOpen ? null : os.numero)}
-                className="w-full flex items-start gap-4 p-6 md:p-8 hover:bg-black/3 transition-colors text-left"
+                className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-black/3 sm:gap-4 sm:p-6 md:p-8"
               >
                 <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-black text-white text-[11px] font-bold">
                   {os.numero}
@@ -656,23 +662,23 @@ export default function TableauDeBordNDT() {
       <Navbar darkOnInit />
 
       {/* Header */}
-      <section className="bg-black text-white py-16 md:py-20 px-6 md:px-16">
+      <section className="bg-black px-5 pb-12 pt-28 text-white sm:px-6 md:px-16 md:py-20">
         <div className="max-w-7xl mx-auto">
           <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/40 mb-4">Tableau de bord</p>
           <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-normal text-white leading-[1.1] tracking-tight mb-4">
             Tableau de bord NDT
           </h1>
           <p className="text-base font-light leading-relaxed text-white/50 max-w-2xl">
-            Statistiques clés sur la dégradation des terres en Tunisie — couverture terrestre, productivité, carbone organique du sol et rapportage PRAIS.
+            Statistiques clés sur la dégradation des terres en Tunisie : couverture terrestre, productivité, carbone organique du sol et rapportage PRAIS.
           </p>
         </div>
       </section>
 
       {/* Tabs + Period Filter */}
       <div className="sticky top-16 z-40 bg-white border-b border-black/10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex gap-0 overflow-x-auto">
+        <div className="mx-auto max-w-7xl px-0 md:px-12">
+          <div className="flex flex-col gap-0 md:flex-row md:items-center md:justify-between md:gap-4">
+            <div className="flex w-full gap-0 overflow-x-auto overscroll-x-contain px-2 md:w-auto md:px-0">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -692,7 +698,7 @@ export default function TableauDeBordNDT() {
             </div>
 
             {activeTab !== 'prais' && (
-              <div className="flex items-center gap-1 bg-stone-100 p-1">
+              <div className="flex items-center justify-center gap-1 border-t border-black/5 bg-stone-100 p-1.5 md:border-t-0 md:p-1">
                 <button
                   onClick={() => setPeriod('2001-2015')}
                   className={`px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] transition-all ${
@@ -716,8 +722,8 @@ export default function TableauDeBordNDT() {
       </div>
 
       {/* Content */}
-      <section className="py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
+      <section className="py-8 md:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-12">
           {activeTab === 'couverture' && <CouvertureTab period={period} />}
           {activeTab === 'productivite' && <ProductiviteTab period={period} />}
           {activeTab === 'soc' && <SOCTab period={period} />}

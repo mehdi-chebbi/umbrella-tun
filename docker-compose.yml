@@ -64,9 +64,11 @@ services:
       GEOSERVER_PASSWORD: geoserver
       CLIP_SERVICE_URL: http://clip-service:3005
       GEOJSON_DIR: /app/geojson
+      RESOURCES_DIR: /app/resources
     volumes:
       - ./mini-services/clip-service/geojson:/app/geojson:ro
       - ./data/tiffs:/data/tiffs:ro
+      - resources:/app/resources
     ports:
       - "4000:4000"
     depends_on:
@@ -119,3 +121,4 @@ volumes:
   pgdata:
   geoserver_data:
   clipped_rasters:
+  resources:

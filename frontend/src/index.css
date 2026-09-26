@@ -127,3 +127,15 @@
 .leaflet-top.leaflet-right {
   top: 80px !important;
 }
+
+@media (max-width: 1023px) {
+  /* Keep native Leaflet controls clear of the mobile action toolbar. */
+  .geoportail-map-shell .leaflet-top.leaflet-right {
+    top: 136px !important;
+  }
+
+  /* Comparison adds a second toolbar row for its extent selector. */
+  .geoportail-map-shell.geoportail-compare-mode .leaflet-top.leaflet-right {
+    top: 216px !important;
+  }
+}

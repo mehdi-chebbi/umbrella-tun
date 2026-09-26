@@ -1,3 +1,17 @@
+# ─── Resources PVC ───────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: resources-pvc
+  namespace: umb-tun
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: longhorn
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -35,6 +49,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: umbrella-config
+          env:
+            - name: RESOURCES_DIR
+              value: "/app/resources"
+          volumeMounts:
+            - name: resources
+              mountPath: /app/resources
           resources:
             requests:
               memory: "128Mi"
@@ -63,6 +83,10 @@ spec:
             periodSeconds: 30
             failureThreshold: 3
             timeoutSeconds: 5
+      volumes:
+        - name: resources
+          persistentVolumeClaim:
+            claimName: resources-pvc
 
 ---
 apiVersion: v1

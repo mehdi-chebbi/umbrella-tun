@@ -4,6 +4,40 @@ import Hero from '@/components/Hero';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { Target, Map, Globe, TrendingUp, Droplets, Wind, TreePine, Fish, Leaf, ArrowRight, Landmark, Layers, Sprout, ShieldCheck, Users } from 'lucide-react';
 
+const keyPartners = [
+  {
+    name: 'Fonds pour l’environnement mondial (FEM)',
+    logo: '/images/partner-gef.webp',
+    url: 'https://www.thegef.org/',
+    className: 'h-12 md:h-14',
+  },
+  {
+    name: 'Programme des Nations Unies pour l’environnement (PNUE)',
+    logo: '/images/partner-unep.svg',
+    url: 'https://www.unep.org/fr',
+    className: 'h-16 md:h-[4.5rem]',
+  },
+  {
+    name: 'Observatoire du Sahara et du Sahel (OSS)',
+    logo: '/images/partner-oss.webp',
+    url: 'https://www.oss-online.org/',
+    className: 'h-12 md:h-14',
+  },
+  {
+    name: 'Convention des Nations Unies sur la lutte contre la désertification (CNULCD)',
+    logo: '/images/partner-unccd.webp',
+    url: 'https://www.unccd.int/',
+    className: 'h-12 md:h-14',
+    gridClassName: 'sm:col-start-2',
+  },
+  {
+    name: "Ministère de l’Environnement de Tunisie",
+    logo: '/images/partner-ministry.webp',
+    url: 'https://www.environnement.gov.tn/',
+    className: 'h-20 md:h-24',
+  },
+];
+
 /* ─── Reveal wrapper ─── */
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   const { ref, isVisible } = useScrollReveal();
@@ -235,8 +269,9 @@ export default function Home() {
       {/* ── Hero ── */}
       <Hero
         variant="split"
-        title="Bienvenue sur le SSDT"
-        titleLine2="Système de Suivi de la Dégradation et de la Gestion Durable des Terres en Tunisie"
+        title="Système de suivi de la dégradation"
+        titleLine2="et de la gestion durable des terres"
+        titleLine3="en Tunisie"
         image="home"
       />
 
@@ -311,11 +346,24 @@ export default function Home() {
                 </div>
                 <div className="border-t border-black/10 pt-8">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-black/30 mb-4">Partenaires clés</p>
-                  <div className="flex flex-wrap gap-3">
-                    {['FEM', 'PNUE', 'OSS', 'CNULCD', "Ministère de l'Environnement"].map((partner) => (
-                      <span key={partner} className="px-3 py-1.5 border border-black/20 text-[11px] text-black/50 hover:bg-black hover:text-white hover:border-black transition-all duration-300 cursor-default">
-                        {partner}
-                      </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-6 items-center gap-x-8 gap-y-8">
+                    {keyPartners.map((partner) => (
+                      <a
+                        key={partner.name}
+                        href={partner.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={partner.name}
+                        title={partner.name}
+                        className={`flex min-h-20 items-center justify-center opacity-75 transition-opacity duration-200 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-umbrella-accent focus-visible:ring-offset-4 sm:col-span-2 ${partner.gridClassName || ''}`}
+                      >
+                        <img
+                          src={partner.logo}
+                          alt={partner.name}
+                          loading="lazy"
+                          className={`${partner.className} max-w-full object-contain`}
+                        />
+                      </a>
                     ))}
                   </div>
                 </div>
@@ -399,7 +447,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="mt-10 w-full">
-                <img src="/images/Home_Image_1.png" alt="Dégradation des terres en Tunisie" className="w-full h-auto rounded-lg" />
+                <img src="/images/Home_Image_1.webp" alt="Dégradation des terres en Tunisie" className="w-full h-auto rounded-lg" />
               </div>
             </div>
           </Reveal>
@@ -649,7 +697,7 @@ export default function Home() {
               </div>
 
               <div className="mt-10 w-full">
-                <img src="/images/Home_Image_2.png" alt="Projets et partenaires" className="w-full h-auto rounded-lg" />
+                <img src="/images/Home_Image_2.webp" alt="Projets et partenaires" className="w-full h-auto rounded-lg" />
               </div>
             </div>
           </Reveal>

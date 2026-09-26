@@ -14,6 +14,9 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
 import AdminLayers from './pages/admin/Layers';
 import AdminClips from './pages/admin/Clips';
+import AdminReports from './pages/admin/Reports';
+import AdminReportMap from './pages/admin/ReportMap';
+import AdminDocuments from './pages/admin/Documents';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatAgent from './components/ChatAgent';
 
@@ -26,6 +29,8 @@ function ScrollToTop() {
 }
 
 function App() {
+  const { pathname } = useLocation();
+
   return (
     <>
     <ScrollToTop />
@@ -40,6 +45,14 @@ function App() {
       <Route path="/ressources" element={<Resources />} />
       <Route path="/admin/connexion" element={<AdminLogin />} />
       <Route
+        path="/admin/signalements/:id/carte"
+        element={
+          <ProtectedRoute>
+            <AdminReportMap />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin"
         element={
           <ProtectedRoute>
@@ -52,10 +65,12 @@ function App() {
         <Route path="utilisateurs" element={<AdminUsers />} />
         <Route path="couches" element={<AdminLayers />} />
         <Route path="decoupages" element={<AdminClips />} />
+        <Route path="signalements" element={<AdminReports />} />
+        <Route path="documents" element={<AdminDocuments />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    <ChatAgent />
+    {pathname !== '/geoportail' && <ChatAgent />}
     </>
   );
 }

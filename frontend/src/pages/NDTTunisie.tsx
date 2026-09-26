@@ -303,7 +303,7 @@ export default function NDTTunisie() {
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <Reveal>
             <div className="w-full">
-              <img src="/images/ldn_image_2.png" alt="NDT en Tunisie" className="w-full h-auto rounded-lg" />
+              <img src="/images/ldn_image_2.webp" alt="NDT en Tunisie" className="w-full h-auto rounded-lg" />
             </div>
           </Reveal>
         </div>
@@ -595,7 +595,7 @@ export default function NDTTunisie() {
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <Reveal>
             <div className="w-full">
-              <img src="/images/ldn_image_1.png" alt="Engagements et actions NDT" className="w-full h-auto rounded-lg" />
+              <img src="/images/ldn_image_1.webp" alt="Engagements et actions NDT" className="w-full h-auto rounded-lg" />
             </div>
           </Reveal>
         </div>

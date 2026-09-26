@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import heroHome from '@/assets/hero-home.jpg';
+import heroHome from '@/assets/hero-home.webp';
 
 interface HeroProps {
   tagline?: string;
@@ -40,7 +40,7 @@ export default function Hero({
      ════════════════════════════════════════════════════════════════ */
   if (variant === 'split') {
     return (
-      <section className="min-h-screen grid grid-cols-1 md:grid-cols-2">
+      <section className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-2">
         {/* Text Side */}
         <div className="flex flex-col justify-center bg-white p-8 md:p-16 lg:p-20 order-2 md:order-1">
           {tagline && (
@@ -52,13 +52,13 @@ export default function Hero({
           )}
 
           <h1
-            className="font-serif text-4xl md:text-5xl lg:text-6xl font-normal text-black leading-[1] tracking-tight animate-fade-up"
+            className="max-w-2xl font-serif text-[2.25rem] md:text-[2.7rem] lg:text-[3.15rem] font-normal text-black leading-[1.12] tracking-[-0.025em] [text-wrap:balance] animate-fade-up"
             style={{ opacity: 0, animationDelay: '0.4s' }}
           >
-            {title}
-            {titleLine2 && <><br /><em className="text-black/50">{titleLine2}</em></>}
-            {titleLine3 && <><br />{titleLine3}</>}
+            {[title, titleLine2, titleLine3].filter(Boolean).join(' ')}
           </h1>
+
+          <div className="mt-7 h-px w-16 bg-umbrella-accent" aria-hidden="true" />
 
           {subtitle && (
             <div {...fadeUp('0.6s')}>

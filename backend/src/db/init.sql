@@ -79,6 +79,25 @@ CREATE TABLE IF NOT EXISTS clipped_layers_cache (
 CREATE INDEX IF NOT EXISTS idx_clipped_layers_cache_country ON clipped_layers_cache(country_file);
 CREATE INDEX IF NOT EXISTS idx_clipped_layers_cache_layer ON clipped_layers_cache(layer_id);
 
+-- Anonymous reports of incorrect map data
+CREATE TABLE IF NOT EXISTS data_reports (
+  id SERIAL PRIMARY KEY,
+  layer_id INTEGER REFERENCES layers(id) ON DELETE SET NULL,
+  layer_name VARCHAR(255) NOT NULL,
+  layer_display_name VARCHAR(255) NOT NULL,
+  selected_clip VARCHAR(255),
+  geometry JSONB NOT NULL,
+  comment TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'fixed')),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_data_reports_status ON data_reports(status);
+CREATE INDEX IF NOT EXISTS idx_data_reports_created_at ON data_reports(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_data_reports_layer_id ON data_reports(layer_id);
+
 -- ============================================
 -- Données initiales
 -- ============================================

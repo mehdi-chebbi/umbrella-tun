@@ -1,0 +1,92 @@
+# ─── Resources PVC ───────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: resources-pvc
+  namespace: umb-tun
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: longhorn
+
+---
+# ─── Deployment ─────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: umb-tun
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nc -z db 5432; do echo waiting for db; sleep 2; done;
+        - name: wait-for-geoserver
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nc -z geoserver 8080; do echo waiting for geoserver; sleep 5; done;
+      containers:
+        - name: backend
+          image: mehdino123/umb-tun-back:latest26
+          ports:
+            - containerPort: 4000
+          envFrom:
+            - configMapRef:
+                name: umbrella-config
+          env:
+            # Path where clip-service writes clipped .tif files (shared via PVC below).
+            # Backend serves these read-only via express.static('/files', ...).
+            - name: CLIP_OUTPUT_DIR
+              value: "/data/clipped-rasters"
+            - name: RESOURCES_DIR
+              value: "/app/resources"
+          volumeMounts:
+            # Read-only access to clipped rasters (written by clip-service, also read by geoserver).
+            # PVC is ReadWriteMany (longhorn), safe to mount on multiple pods.
+            - name: clipped-rasters
+              mountPath: /data/clipped-rasters
+              readOnly: true
+            - name: resources
+              mountPath: /app/resources
+          # GeoJSON files are baked into the image at /app/geojson (GEOJSON_DIR).
+          # Source tiffs live in the geoserver-data PVC (read by clip-service, not backend).
+          # Backend only forwards file_path strings to clip-service; it never opens source rasters.
+          # Clipped .tif outputs ARE now read via the clipped-rasters PVC for TIFF download serving.
+      volumes:
+        - name: clipped-rasters
+          persistentVolumeClaim:
+            claimName: clipped-rasters-pvc
+        - name: resources
+          persistentVolumeClaim:
+            claimName: resources-pvc
+
+---
+# ─── Service ────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: umb-tun
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 4000
+      targetPort: 4000

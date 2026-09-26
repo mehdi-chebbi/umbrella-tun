@@ -17,6 +17,7 @@ import requests
 from typing import Optional
 from subprocess import run, CalledProcessError
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
 from datetime import datetime
@@ -171,6 +172,11 @@ class StatsRequest(BaseModel):
     raster_path: str
     polygon: Optional[dict] = None  # GeoJSON (for user-drawn polygons)
     geojson_path: Optional[str] = None  # Path to GeoJSON file (for country files, avoids sending large payloads)
+
+
+class RasterDownloadRequest(BaseModel):
+    raster_path: str
+    filename: str
 
 
 # -----------------------------
@@ -701,6 +707,23 @@ async def perform_clip(
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "clipping-service", "version": "2.0.0"}
+
+
+@app.post("/raster/download")
+async def download_source_raster(request: RasterDownloadRequest):
+    """Return a full source raster from the volume mounted in this service."""
+    raster_path = Path(request.raster_path)
+    if not raster_path.is_file():
+        raise HTTPException(status_code=404, detail="Raster source not found")
+    if raster_path.suffix.lower() not in {".tif", ".tiff"}:
+        raise HTTPException(status_code=400, detail="Unsupported raster format")
+
+    safe_filename = Path(request.filename).name
+    return FileResponse(
+        path=str(raster_path),
+        media_type="image/tiff",
+        filename=safe_filename,
+    )
 
 
 @app.post("/clip", response_model=ClipResponse)

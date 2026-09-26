@@ -4,6 +4,19 @@ dist/
 
 # Environment
 .env
+.env.*
+!.env.example
+
+# Logs and test output
+*.log
+coverage/
+.nyc_output/
+
+# Build and tool caches
+.vite/
+.cache/
+.eslintcache
+*.tsbuildinfo
 
 # IDE
 .vscode/
@@ -11,9 +24,22 @@ dist/
 *.swp
 *.swo
 
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*~
+
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Docker
 postgres_data/
+
+# Large geospatial datasets
+COG/
+new k8s/data/
+*.tif
+*.tiff

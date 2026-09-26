@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import { Readable } from 'stream';
 import { query } from '../db/connection.js';
 import { authMiddleware, adminOnly } from '../middleware/auth.js';
 
@@ -251,6 +252,7 @@ router.get('/layers', async (req: Request, res: Response): Promise<void> => {
         wmsUrl: `/api/clip/wms?workspace=${workspace}`,
         bounds: DEFAULT_BOUNDS,
         hasStats: !!layer.file_path && !!layer.class_labels,
+        hasRasterDownload: !!layer.file_path,
         group_id: layer.group_id,
         group_name: layer.group_name,
         group_legend: layer.group_legend,
@@ -265,6 +267,68 @@ router.get('/layers', async (req: Request, res: Response): Promise<void> => {
   } catch (error: any) {
     console.error('Error fetching layers:', error);
     res.status(500).json({ error: 'Échec de récupération des couches', message: error.message });
+  }
+});
+
+// ─── GET /api/clip/layer/:id/download — Download full source raster ─────
+router.get('/layer/:id/download', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const idParam = req.params.id;
+    const layerId = Number.parseInt(Array.isArray(idParam) ? idParam[0] : idParam, 10);
+    if (!Number.isInteger(layerId)) {
+      res.status(400).json({ error: 'ID de couche invalide' });
+      return;
+    }
+
+    const result = await query(
+      'SELECT geoserver_name, file_path FROM layers WHERE id = $1 AND is_active = true',
+      [layerId]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Couche non trouvée' });
+      return;
+    }
+
+    const layer = result.rows[0];
+    const safeName = String(layer.geoserver_name)
+      .replace(/^[^:]+:/, '')
+      .replace(/[^a-zA-Z0-9._-]+/g, '-');
+
+    // Prefer the source file when this backend has the raster volume mounted.
+    if (layer.file_path && fs.existsSync(layer.file_path)) {
+      const extension = path.extname(layer.file_path) || '.tif';
+      res.download(layer.file_path, `${safeName}-tunisie${extension}`);
+      return;
+    }
+
+    // The clip-service has the same source-raster volume used to create the
+    // governorate clips, so ask it to serve the original Tunisia raster.
+    if (!layer.file_path) {
+      res.status(404).json({ error: 'Raster source indisponible' });
+      return;
+    }
+    const filename = `${safeName}-tunisie${path.extname(layer.file_path) || '.tif'}`;
+    const rasterResponse = await fetch(`${CLIP_SERVICE_URL}/raster/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raster_path: layer.file_path, filename }),
+    });
+
+    if (!rasterResponse.ok || !rasterResponse.body) {
+      const details = await rasterResponse.text();
+      console.error('Clip-service raster download error:', rasterResponse.status, details);
+      res.status(rasterResponse.status === 404 ? 404 : 502).json({ error: 'Raster source indisponible' });
+      return;
+    }
+
+    res.setHeader('Content-Type', rasterResponse.headers.get('content-type') || 'image/tiff');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    const contentLength = rasterResponse.headers.get('content-length');
+    if (contentLength) res.setHeader('Content-Length', contentLength);
+    Readable.fromWeb(rasterResponse.body as any).pipe(res);
+  } catch (error: any) {
+    console.error('Full raster download error:', error);
+    res.status(500).json({ error: 'Échec du téléchargement du raster' });
   }
 });
 
@@ -324,8 +388,8 @@ router.post('/stats', async (req: Request, res: Response): Promise<void> => {
   try {
     const { layer_name, polygon, clippedLayerName } = req.body;
 
-    if (!layer_name || !polygon) {
-      res.status(400).json({ error: 'layer_name et polygon sont requis' });
+    if (!layer_name || (!polygon && !clippedLayerName)) {
+      res.status(400).json({ error: 'layer_name et une zone de calcul sont requis' });
       return;
     }
 
@@ -350,13 +414,14 @@ router.post('/stats', async (req: Request, res: Response): Promise<void> => {
 
     // Determine which raster path to send to clip-service
     let rasterPath: string;
+    let geojsonPath: string | undefined;
     let statsLayerLabel = layer_name;
 
     if (clippedLayerName) {
       // Clipped view: look up the cache entry to find the layer_id,
       // then reconstruct the tiff path on the clip-service container.
       const clipResult = await query(
-        'SELECT layer_id FROM clipped_layers_cache WHERE clipped_layer_name = $1',
+        'SELECT layer_id, country_file FROM clipped_layers_cache WHERE clipped_layer_name = $1',
         [clippedLayerName]
       );
 
@@ -385,6 +450,15 @@ router.post('/stats', async (req: Request, res: Response): Promise<void> => {
       rasterPath = `${OUTPUT_DIR}/${sourceLayerName}/${outputLayerId}.tif`;
       statsLayerLabel = clippedLayerName;
 
+      // When no custom polygon is supplied, calculate over the complete
+      // governorate boundary already associated with this cached clip.
+      if (!polygon) {
+        geojsonPath = path.join(
+          process.env.GEOJSON_DIR || '/app/geojson',
+          clipResult.rows[0].country_file
+        );
+      }
+
       console.log(`[Stats] Clipped mode: ${clippedLayerName} → raster_path: ${rasterPath}`);
     } else {
       // Source view: use the source layer's file_path
@@ -406,7 +480,10 @@ router.post('/stats', async (req: Request, res: Response): Promise<void> => {
       const response = await fetch(`${CLIP_SERVICE_URL}/stats`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ raster_path: rasterPath, polygon }),
+        body: JSON.stringify({
+          raster_path: rasterPath,
+          ...(polygon ? { polygon } : { geojson_path: geojsonPath }),
+        }),
         signal: controller.signal
       });
 
@@ -591,6 +668,33 @@ function getGeojsonFiles(): string[] {
     .sort();
 }
 
+// GET /api/clip/boundary/:filename — public governorate boundary GeoJSON
+router.get('/boundary/:filename', (req: Request, res: Response): void => {
+  try {
+    const filename = String(req.params.filename);
+    const geojsonDir = path.resolve(process.env.GEOJSON_DIR || './geojson');
+
+    // Only serve a GeoJSON file directly inside the configured boundary folder.
+    if (path.basename(filename) !== filename || !filename.endsWith('.geojson')) {
+      res.status(400).json({ error: 'Nom de limite invalide' });
+      return;
+    }
+
+    const boundaryPath = path.resolve(geojsonDir, filename);
+    if (!boundaryPath.startsWith(`${geojsonDir}${path.sep}`) || !fs.existsSync(boundaryPath)) {
+      res.status(404).json({ error: 'Limite du gouvernorat introuvable' });
+      return;
+    }
+
+    const boundary = JSON.parse(fs.readFileSync(boundaryPath, 'utf8'));
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.json(boundary);
+  } catch (error: any) {
+    console.error('[Boundary] Error:', error.message);
+    res.status(500).json({ error: 'Échec de récupération de la limite' });
+  }
+});
+
 // GET /api/clip/batch-status
 router.get('/batch-status', authMiddleware, adminOnly, async (req: Request, res: Response): Promise<void> => {
   try {
@@ -677,6 +781,7 @@ router.get('/layer/:id/clips', async (req: Request, res: Response): Promise<void
         clippedLayerName: r.clipped_layer_name,
         bbox, // [west, south, east, north] or null
         downloadUrl,
+        boundaryUrl: `/clip/boundary/${encodeURIComponent(r.country_file)}`,
       };
     });
 

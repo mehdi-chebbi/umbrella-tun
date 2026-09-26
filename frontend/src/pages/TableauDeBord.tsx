@@ -196,7 +196,7 @@ export default function TableauDeBord() {
               </div>
 
               <div className="mt-10 w-full">
-                <img src="/images/tableau_bord_image_1.png" alt="Tableau de bord NDT" className="w-full h-auto rounded-lg" />
+                <img src="/images/tableau_bord_image_1.webp" alt="Tableau de bord NDT" className="w-full h-auto rounded-lg" />
               </div>
             </div>
           </Reveal>
