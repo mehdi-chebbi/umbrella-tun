@@ -60,7 +60,11 @@ function DataVisualization({ visualization }: { visualization: Visualization }) 
 interface ChatAgentProps {
   placement?: 'default' | 'geoportal';
   geoportalHasStats?: boolean;
-  analysisRequest?: { id: number; prompt: string } | null;
+  analysisRequest?: {
+    id: number;
+    prompt: string;
+    context: { layerId: number; governorate: string };
+  } | null;
 }
 
 export default function ChatAgent({ placement = 'default', geoportalHasStats = false, analysisRequest = null }: ChatAgentProps) {
@@ -92,7 +96,7 @@ export default function ChatAgent({ placement = 'default', geoportalHasStats = f
     return () => abortRef.current?.abort();
   }, []);
 
-  const sendMessage = async (message: string) => {
+  const sendMessage = async (message: string, analysisContext?: { layerId: number; governorate: string }) => {
     const trimmed = message.trim();
     if (!trimmed || isStreaming) return;
 
@@ -121,6 +125,7 @@ export default function ChatAgent({ placement = 'default', geoportalHasStats = f
             content: m.content,
           })),
           summary: conversationSummary,
+          ...(analysisContext ? { analysisContext } : {}),
         }),
         signal: abortRef.current.signal,
       });
@@ -239,7 +244,7 @@ export default function ChatAgent({ placement = 'default', geoportalHasStats = f
       return;
     }
     handledAnalysisRequestRef.current = analysisRequest.id;
-    void sendMessage(analysisRequest.prompt);
+    void sendMessage(analysisRequest.prompt, analysisRequest.context);
     // sendMessage deliberately uses the latest chat state when this request changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisRequest, isStreaming]);
@@ -268,7 +273,9 @@ export default function ChatAgent({ placement = 'default', geoportalHasStats = f
           onClick={handleOpen}
           className={`fixed flex h-14 w-14 items-center justify-center rounded-full bg-umbrella-accent text-white shadow-lg transition-all duration-300 hover:bg-umbrella-accent/90 hover:shadow-xl active:scale-[0.98] group ${
             placement === 'geoportal'
-              ? `right-3 top-[46%] z-[1200] -translate-y-1/2 lg:right-4 lg:translate-y-0 ${geoportalHasStats ? 'lg:top-[29rem]' : 'lg:top-1/2'}`
+              ? geoportalHasStats
+                ? 'bottom-[calc(55dvh+1rem)] right-3 top-auto z-[1200] translate-y-0 lg:bottom-auto lg:right-4 lg:top-[29rem]'
+                : 'right-3 top-[46%] z-[1200] -translate-y-1/2 lg:right-4 lg:top-1/2 lg:translate-y-0'
               : 'bottom-6 right-6 z-[9999]'
           }`}
           aria-label="Open AI Assistant"

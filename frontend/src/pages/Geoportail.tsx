@@ -220,7 +220,11 @@ export default function Geoportail() {
   const [statsResult, setStatsResult] = useState<StatsResult | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState('');
-  const [aiAnalysisRequest, setAiAnalysisRequest] = useState<{ id: number; prompt: string } | null>(null);
+  const [aiAnalysisRequest, setAiAnalysisRequest] = useState<{
+    id: number;
+    prompt: string;
+    context: { layerId: number; governorate: string };
+  } | null>(null);
 
   // Anonymous incorrect-data reporting
   const [reportMode, setReportMode] = useState(false);
@@ -1254,6 +1258,7 @@ export default function Geoportail() {
                       onClick={() => setAiAnalysisRequest({
                         id: Date.now(),
                         prompt: `Analyse les résultats de la couche « ${activeLayer.name} » pour le gouvernorat de ${governorate}.`,
+                        context: { layerId: activeLayer.id, governorate },
                       })}
                       className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-umbrella-accent px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-umbrella-accent/90 active:scale-[0.98]"
                     >

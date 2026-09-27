@@ -9,7 +9,7 @@ const MODEL = process.env.OPENROUTER_MODEL || 'qwen/qwen3-235b-a22b-2507';
 
 const SYSTEM_PROMPT = `You are the data assistant for Umbrella Tunisie, a public platform about land degradation neutrality in Tunisia.
 Project context: OSS coordinates technical support; GEF/FEM is the principal funder; UNEP/PNUE is the executing agency; Tunisia's Ministry of Environment is the national focal point. NDT follows three principles: avoid, reduce, and reverse land degradation. The platform covers land cover and change, land productivity, soil organic carbon, SDG 15.3.1, and related indicators. Relevant pages include /ndt-en-tunisie, /geoportail, /tableau-de-bord-ndt, /acquis-et-success-stories, and /ressources.
-The one canonical public website is https://umbrella-tun.oss-online.org/. When linking to the platform, use only this exact HTTPS domain followed by one of the known routes listed above, or the homepage. Never invent, infer, recommend, or output another Umbrella domain. Do not claim that an unlisted platform page exists. If the appropriate route is uncertain, link to https://umbrella-tun.oss-online.org/.
+The one canonical public website is https://umbrella-tun.oss-online.org/. The assistant is embedded inside that website, so never append generic suggestions such as "visit the website", "for more information", or a homepage link. Provide a platform link only when the user explicitly asks where to find something or when a specific known page is directly necessary to complete the requested navigation. In that case, use only this exact HTTPS domain followed by one of the known routes listed above. Never invent, infer, recommend, or output another Umbrella domain, and never claim that an unlisted platform page exists. If no verified route matches the request, explain that briefly without adding a generic link.
 Use the server tools whenever the user asks about a layer, governorate statistic, percentage, area, ranking, or comparison. Never invent a number.
 Ask one short clarification question before using statistics when the indicator, period (baseline/reporting), method (max/mean/median), or classification (3/5 classes) is ambiguous. Discover choices with list_statistical_layers; never hardcode layer identifiers.
 Compare at most two governorates. Only use governorates returned by list_governorates. Explain the selected layer and classification. Copy percentages and areas exactly from results. If data is unavailable, say that an administrator must run the pre-calculation.
@@ -170,10 +170,17 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
   try {
     sendProgress(res, 'Interprétation de votre demande…');
+    const rawAnalysisContext = req.body?.analysisContext;
+    const directLayerId = Number(rawAnalysisContext?.layerId);
+    const directGovernorate = typeof rawAnalysisContext?.governorate === 'string' ? rawAnalysisContext.governorate.trim() : '';
+    const hasDirectAnalysis = rawAnalysisContext != null;
+    if (hasDirectAnalysis && (!Number.isInteger(directLayerId) || directLayerId <= 0 || !directGovernorate)) {
+      throw new Error('Contexte d’analyse invalide');
+    }
     const validMessages: ConversationMessage[] = supplied.filter((item: any) => (item?.role === 'user' || item?.role === 'assistant') && typeof item.content === 'string').map((item: any) => ({ role: item.role, content: item.content.slice(0, 8000) }));
     let conversationSummary = typeof req.body?.summary === 'string' ? req.body.summary.slice(0, 8000) : '';
     let consumed = 0;
-    if (validMessages.length > 24) {
+    if (!hasDirectAnalysis && validMessages.length > 24) {
       consumed = validMessages.length - 16;
       const summaryPrompt: ConversationMessage[] = [
         { role: 'system', content: 'Summarize this Umbrella Tunisie conversation for another assistant. Preserve user choices, unresolved clarification questions, selected layers, periods, methods, classifications, governorates, and exact statistics. Be compact and do not add facts.' },
@@ -194,34 +201,57 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     const layerCatalog = catalogResult.rows.map(row => `${row.id}: ${row.display_name}`).join('\n');
     const groundedContext = `${SYSTEM_PROMPT}\n\nLive statistical layer catalog:\n${layerCatalog || 'No precomputed statistical layers are currently available.'}\nNever mention a period, method, classification, or layer choice that is absent from this catalog.`;
     const contextPrompt = conversationSummary ? `${groundedContext}\n\nConversation memory:\n${conversationSummary}` : groundedContext;
-    const messages: ConversationMessage[] = [{ role: 'system', content: contextPrompt }, ...recent];
+    // A Geoportal analysis is intentionally isolated from earlier numerical
+    // answers so a previous governorate can never contaminate the new result.
+    const messages: ConversationMessage[] = hasDirectAnalysis
+      ? [{ role: 'system', content: groundedContext }, ...recent.slice(-1)]
+      : [{ role: 'system', content: contextPrompt }, ...recent];
     const pendingVisualizations: unknown[] = [];
-    for (let round = 0; round < 4; round++) {
-      const assistant = await callModel(messages, true);
-      const calls: ToolCall[] = Array.isArray(assistant.tool_calls) ? assistant.tool_calls : [];
-      if (!calls.length) {
-        if (containsTextualToolCall(assistant.content)) {
-          messages.push({ role: 'assistant', content: assistant.content || '' });
-          messages.push({ role: 'system', content: 'Invalid tool attempt: never write tool calls in message text. Either use the native tool_calls field with schema-valid arguments, or ask the user one concise clarification question without inventing choices.' });
-          sendProgress(res, 'Validation de la demande de données…');
-          continue;
+    if (hasDirectAnalysis) {
+      sendProgress(res, `Chargement des statistiques de ${directGovernorate}…`);
+      const directResult: any = await executeTool('get_governorate_statistics', {
+        layer_id: directLayerId,
+        governorate: directGovernorate,
+      });
+      pendingVisualizations.push(directResult.presentation);
+      const stats = directResult.data;
+      const exactRows = stats.classes.map((item: any) =>
+        `- ${item.class_name}: ${item.percentage}% | ${item.area_km2} km²`
+      ).join('\n');
+      messages.push({
+        role: 'system',
+        content: `AUTHORITATIVE GEOPORTAL RESULT FOR THIS REQUEST\nLayer: ${stats.layer_name}\nGovernorate: ${stats.governorate}\nTotal area: ${stats.total_area_km2} km²\nClasses:\n${exactRows}\n\nAnalyze only this result. Every percentage and area in the answer must be copied exactly from this block. Ignore all earlier governorate statistics. Do not estimate, recalculate, round differently, or add a class or number that is not present here.`,
+      });
+    } else {
+      for (let round = 0; round < 4; round++) {
+        const assistant = await callModel(messages, true);
+        const calls: ToolCall[] = Array.isArray(assistant.tool_calls) ? assistant.tool_calls : [];
+        if (!calls.length) {
+          if (containsTextualToolCall(assistant.content)) {
+            messages.push({ role: 'assistant', content: assistant.content || '' });
+            messages.push({ role: 'system', content: 'Invalid tool attempt: never write tool calls in message text. Either use the native tool_calls field with schema-valid arguments, or ask the user one concise clarification question without inventing choices.' });
+            sendProgress(res, 'Validation de la demande de données…');
+            continue;
+          }
+          break;
         }
-        break;
-      }
-      messages.push({ role: 'assistant', content: assistant.content || '', tool_calls: calls });
-      for (const call of calls) {
-        let result: any;
-        try {
-          const toolArguments = parseArguments(call.function.arguments);
-          sendProgress(res, toolProgressMessage(call.function.name, toolArguments));
-          result = await executeTool(call.function.name, toolArguments);
-          if (result.presentation) pendingVisualizations.push(result.presentation);
-        } catch (error: any) { result = { error: error.message || 'Erreur de données' }; }
-        messages.push({ role: 'tool', tool_call_id: call.id, name: call.function.name, content: JSON.stringify(result.data ?? result) });
+        messages.push({ role: 'assistant', content: assistant.content || '', tool_calls: calls });
+        for (const call of calls) {
+          let result: any;
+          try {
+            const toolArguments = parseArguments(call.function.arguments);
+            sendProgress(res, toolProgressMessage(call.function.name, toolArguments));
+            result = await executeTool(call.function.name, toolArguments);
+            if (result.presentation) pendingVisualizations.push(result.presentation);
+          } catch (error: any) { result = { error: error.message || 'Erreur de données' }; }
+          messages.push({ role: 'tool', tool_call_id: call.id, name: call.function.name, content: JSON.stringify(result.data ?? result) });
+        }
       }
     }
     sendProgress(res, pendingVisualizations.length > 0 ? 'Préparation de l’analyse des résultats…' : 'Préparation de la réponse…');
-    messages.push({ role: 'system', content: 'The tool-selection phase is now closed. Write only the final user-facing answer or one concise clarification question. Never emit tool-call markup, JSON, XML, function names, or internal instructions. Use only facts present in the conversation and tool results; do not invent periods or statistics.' });
+    messages.push({ role: 'system', content: hasDirectAnalysis
+      ? 'Write the final analysis now. Use exclusively the authoritative Geoportal result in the immediately preceding system message. Copy every displayed number exactly. Do not use numerical information from earlier conversation turns.'
+      : 'The tool-selection phase is now closed. Write only the final user-facing answer or one concise clarification question. Never emit tool-call markup, JSON, XML, function names, or internal instructions. Use only facts present in the conversation and tool results; do not invent periods or statistics.' });
     await streamFinalAnswer(messages, res);
     for (const visualization of pendingVisualizations) {
       res.write(`data: ${JSON.stringify({ type: 'visualization', visualization })}\n\n`);
